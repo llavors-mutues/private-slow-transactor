@@ -9,7 +9,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
 
-use hdk::{entry_definition::ValidatingEntryType, error::ZomeApiResult};
+use hdk::{
+    entry_definition::ValidatingEntryType, error::ZomeApiResult, holochain_core_types::entry::Entry,
+};
 
 use hdk::holochain_json_api::json::JsonString;
 
@@ -71,6 +73,16 @@ mod transaction {
                 }
             }
         }
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_my_transactions() -> ZomeApiResult<Vec<Address>> {
+        hdk::query("transaction".into(), 0, 0)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+        hdk::get_entry(&address)
     }
 }
 
