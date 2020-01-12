@@ -38,37 +38,39 @@ const orchestrator = new Orchestrator({
   }
 });
 
+function sendAmount(to, amount) {
+  return caller =>
+    caller.call("transactor", "transactor", "send_amount", {
+      receiver_address: to,
+      amount,
+      timestamp: Math.floor(Date.now() / 1000)
+    });
+}
+
 orchestrator.registerScenario("description of example test", async (s, t) => {
   const { alice, bob } = await s.players(
     { alice: conductorConfig, bob: conductorConfig },
     true
   );
 
-  // Make a call to a Zome function
-  // indicating the function, and passing it an input
-  let addr = await alice.call("transactor", "transactor", "send_amount", {
-    receiver_address: bob.instance("transactor").agentAddress,
-    amount: 10,
-    timestamp: Math.floor(Date.now() / 1000)
-  });
+  const aliceAddress = alice.instance("transactor").agentAddress;
+  const bobAddress = bob.instance("transactor").agentAddress;
 
-  // Wait for all network activity to settle
+  let result = await sendAmount(bobAddress, 10)(alice);
   await s.consistency();
+  t.ok(result.Ok);
 
-  t.ok(addr.Ok);
-
-  // Make a call to a Zome function
-  // indicating the function, and passing it an input
-  addr = await alice.call("transactor", "transactor", "send_amount", {
-    receiver_address: bob.instance("transactor").agentAddress,
-    amount: 100,
-    timestamp: Math.floor(Date.now() / 1000)
-  });
-
-  // Wait for all network activity to settle
+  result = await sendAmount(bobAddress, 10)(alice);
   await s.consistency();
+  t.ok(result.Ok);
 
-  t.notOk(addr.Ok);
+  result = await sendAmount(aliceAddress, 10)(bob);
+  await s.consistency();
+  t.ok(result.Ok);
+
+  result = await sendAmount(bobAddress, 91)(alice);
+  await s.consistency();
+  t.notOk(result.Ok);
 });
 
 orchestrator.run();

@@ -29,6 +29,10 @@ pub fn entry_definition() -> ValidatingEntryType {
         validation: |_validation_data: hdk::EntryValidationData<Transaction>| {
             match _validation_data {
                 hdk::EntryValidationData::Create { entry, validation_data } => {
+                    if entry.receiver_address == entry.sender_address {
+                        return Err(String::from("Receiver and sender cannot be the same"));
+                    }
+
                     /*
                     let sources = validation_data.sources();
                     if !sources.contains(&entry.receiver_address) || !sources.contains(&entry.sender_address) {
