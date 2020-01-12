@@ -29,27 +29,32 @@ pub fn entry_definition() -> ValidatingEntryType {
         validation: |_validation_data: hdk::EntryValidationData<Transaction>| {
             match _validation_data {
                 hdk::EntryValidationData::Create { entry, validation_data } => {
+                    // 1. Check if receiver and sender are not the same
                     if entry.receiver_address == entry.sender_address {
                         return Err(String::from("Receiver and sender cannot be the same"));
                     }
 
                     /*
+                    // 2. Check that the receiver and the sender have both signed the transaction
                     let sources = validation_data.sources();
                     if !sources.contains(&entry.receiver_address) || !sources.contains(&entry.sender_address) {
                         return Err(String::from("Transaction must be signed by sender and receiver"));
                     } */
-
-                    let chain_entries= validation_data.package.source_chain_entries.unwrap().clone();
-
-                    let mut transactions = get_transactions(&chain_entries);
-                    transactions.push(entry);
-
+                    let chain_entries = validation_data.package.source_chain_entries.unwrap().clone();
                     let agent_address = get_chain_agent_id(&chain_entries)?;
 
-                    let balance = compute_balance(&agent_address, transactions);
+                    if let Some(credit_limit) = crate::get_credit_limit(&agent_address)? {
 
-                    if balance < crate::get_credit_limit(&agent_address)? {
-                        return Err(String::from("Agent does not have enough credit"));
+                        let mut transactions = get_transactions(&chain_entries);
+                        transactions.push(entry);
+
+                        // Get the balance for this agent
+                        let balance = compute_balance(&agent_address, transactions);
+
+                        // 3. Check that the balance is not less than the credit limit
+                        if balance < credit_limit {
+                            return Err(String::from("Agent does not have enough credit"));
+                        }
                     }
 
                     Ok(())

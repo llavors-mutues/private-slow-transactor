@@ -74,6 +74,6 @@ mod transaction {
     }
 }
 
-pub fn get_credit_limit(_agent_address: &Address) -> ZomeApiResult<isize> {
-    Ok(-100)
+pub fn get_credit_limit(_agent_address: &Address) -> ZomeApiResult<Option<isize>> {
+    Ok(Some(-100))
 }

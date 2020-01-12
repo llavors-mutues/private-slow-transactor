@@ -56,15 +56,15 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   const aliceAddress = alice.instance("transactor").agentAddress;
   const bobAddress = bob.instance("transactor").agentAddress;
 
-  let result = await sendAmount(bobAddress, 10)(alice);
+  let result = await sendAmount(bobAddress, 10)(alice);   // Alice has -10, Bob has +10
   await s.consistency();
   t.ok(result.Ok);
 
-  result = await sendAmount(bobAddress, 10)(alice);
+  result = await sendAmount(bobAddress, 10)(alice);       // Alice has -20, Bob has +20
   await s.consistency();
   t.ok(result.Ok);
 
-  result = await sendAmount(aliceAddress, 10)(bob);
+  result = await sendAmount(aliceAddress, 10)(bob);       // Alice has -10, Bob has +10
   await s.consistency();
   t.ok(result.Ok);
 
