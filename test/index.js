@@ -68,9 +68,13 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   await s.consistency();
   t.ok(result.Ok);
 
-  result = await sendAmount(bobAddress, 91)(alice);
+  result = await sendAmount(bobAddress, 91)(alice);       // Alice would have -101, not valid!
   await s.consistency();
   t.notOk(result.Ok);
+
+  result = await sendAmount(bobAddress, 90)(alice);       // Alice has -100, Bob has +100
+  await s.consistency();
+  t.ok(result.Ok);
 });
 
 orchestrator.run();
