@@ -46,7 +46,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
 
   // Make a call to a Zome function
   // indicating the function, and passing it an input
-  const addr = await alice.call("transactor", "transactor", "send_amount", {
+  let addr = await alice.call("transactor", "transactor", "send_amount", {
     receiver_address: bob.instance("transactor").agentAddress,
     amount: 10,
     timestamp: Math.floor(Date.now() / 1000)
@@ -56,6 +56,19 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   await s.consistency();
 
   t.ok(addr.Ok);
+
+  // Make a call to a Zome function
+  // indicating the function, and passing it an input
+  addr = await alice.call("transactor", "transactor", "send_amount", {
+    receiver_address: bob.instance("transactor").agentAddress,
+    amount: 100,
+    timestamp: Math.floor(Date.now() / 1000)
+  });
+
+  // Wait for all network activity to settle
+  await s.consistency();
+
+  t.notOk(addr.Ok);
 });
 
 orchestrator.run();

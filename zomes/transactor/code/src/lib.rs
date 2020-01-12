@@ -9,7 +9,6 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
 
-use hdk::holochain_core_types::dna::entry_types::Sharing;
 use hdk::{entry_definition::ValidatingEntryType, error::ZomeApiResult};
 
 use hdk::holochain_json_api::json::JsonString;
@@ -27,7 +26,6 @@ pub mod transaction;
 pub mod utils;
 
 use crate::message::MessageBody;
-use crate::transaction::Transaction;
 
 #[zome]
 mod transaction {
@@ -44,28 +42,7 @@ mod transaction {
 
     #[entry_def]
     fn transaction_entry_def() -> ValidatingEntryType {
-        entry!(
-            name: "transaction",
-            description: "this is a same entry defintion",
-            sharing: Sharing::Public,
-            validation_package: || {
-                hdk::ValidationPackageDefinition::ChainFull
-            },
-            validation: |_validation_data: hdk::EntryValidationData<Transaction>| {
-                match _validation_data {
-                    hdk::EntryValidationData::Create { entry, validation_data } => {
-                        let sources = validation_data.sources();
-
-                        if !sources.contains(&entry.receiver_address) || !sources.contains(&entry.sender_address) {
-                            return Err(String::from("Transaction must be signed by sender and receiver"));
-                        }
-
-                        Ok(())
-                    },
-                _ => Err(String::from("Only create transaction is allowed"))
-                }
-            }
-        )
+        transaction::entry_definition()
     }
 
     #[zome_fn("hc_public")]
@@ -95,4 +72,8 @@ mod transaction {
             }
         }
     }
+}
+
+pub fn get_credit_limit(_agent_address: &Address) -> ZomeApiResult<isize> {
+    Ok(-100)
 }
