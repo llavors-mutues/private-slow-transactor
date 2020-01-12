@@ -20,26 +20,23 @@ process.on("unhandledRejection", error => {
 
 const dnaPath = path.join(__dirname, "../dist/hc-mutual-credit.dna.json");
 
-const orchestrator = new Orchestrator({
-  middleware: combine(
-    // use the tape harness to run the tests, injects the tape API into each scenario
-    // as the second argument
-    tapeExecutor(require("tape")),
-
-    // specify that all "players" in the test are on the local machine, rather than
-    // on remote machines
-    localOnly,
-
-    // squash all instances from all conductors down into a single conductor,
-    // for in-memory testing purposes.
-    // Remove this middleware for other "real" network types which can actually
-    // send messages across conductors
-    singleConductor
-  )
-});
-
 const dna = Config.dna(dnaPath, "scaffold-test");
-const conductorConfig = Config.gen({ transactor: dna });
+const conductorConfig = Config.gen(
+  { transactor: dna },
+  {
+    network: {
+      type: "sim2h",
+      sim2h_url: "ws://localhost:9000"
+    }
+  }
+);
+
+const orchestrator = new Orchestrator({
+  waiter: {
+    softTimeout: 20000,
+    hardTimeout: 30000
+  }
+});
 
 orchestrator.registerScenario("description of example test", async (s, t) => {
   const { alice, bob } = await s.players(
@@ -50,7 +47,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   // Make a call to a Zome function
   // indicating the function, and passing it an input
   const addr = await alice.call("transactor", "transactor", "send_amount", {
-    recipient_address: bob.instance("transactor").agentAddress,
+    receiver_address: bob.instance("transactor").agentAddress,
     amount: 10,
     timestamp: Math.floor(Date.now() / 1000)
   });

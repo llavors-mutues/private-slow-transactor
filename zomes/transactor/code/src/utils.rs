@@ -18,6 +18,8 @@ pub fn commit_with_provenance(entry: &Entry, provenance: Provenance) -> ZomeApiR
     let my_provenance = Provenance::new(AGENT_ADDRESS.clone(), Signature::from(signature));
 
     let options = CommitEntryOptions::new(vec![provenance, my_provenance]);
+
+    hdk::debug(format!("hihooo {:?}", options))?;
     let address = hdk::commit_entry_result(&entry, options)?;
     Ok(address.address())
 }
