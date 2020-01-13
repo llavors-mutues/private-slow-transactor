@@ -1,16 +1,12 @@
-use hdk::prelude::Entry;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
-    holochain_core_types::{
-        chain_header::ChainHeader,
-        signature::{Provenance, Signature},
-    },
+    holochain_core_types::signature::{Provenance, Signature},
     holochain_persistence_api::cas::content::Address,
 };
 
 use crate::attestation::{attestation_entry, Attestation};
 use crate::message::MessageBody;
-use crate::transaction::{get_transactions, transaction_entry, validate_transactions};
+use crate::transaction::{transaction_entry, validate_transactions};
 use crate::utils;
 
 pub fn validate_and_commit_transaction(
@@ -29,24 +25,27 @@ pub fn validate_and_commit_transaction(
     }
 
     // Get the attestations addresses from the DHT
-    let transactions_addresses = get_agent_transaction_addresses_from_dht(&address)?;
+    let dht_transactions_addresses = get_agent_transaction_addresses_from_dht(&address)?;
 
-    // Validate that the attestations from the agents are the only transactions present in the given source chain
-    validate_transactions_against_attestations(&transactions_addresses, &message.chain_entries)?;
+    let mut old_transactions = message.old_transactions;
 
-    let entries: Vec<Entry> = message
-        .chain_entries
+    let source_chain_transaction_addresses = old_transactions
+        .clone()
         .into_iter()
-        .map(|chain_entry| chain_entry.1)
+        .map(|transaction| hdk::entry_address(&transaction_entry(&transaction)).unwrap())
         .collect();
 
-    // Filter the transactions from the source chain entries
-    let mut transactions = get_transactions(&entries);
+    // Validate that the attestations from the agents are the only transactions present in the given source chain
+    validate_transactions_against_attestations(
+        &dht_transactions_addresses,
+        &source_chain_transaction_addresses,
+    )?;
 
-    transactions.push(message.transaction);
+    // Filter the transactions from the source chain entries
+    old_transactions.push(message.transaction);
 
     // Validate that the transactions are valid
-    validate_transactions(&address, transactions)?;
+    validate_transactions(&address, old_transactions)?;
 
     // Commit the transaction and return our own signature
     let signature = hdk::sign(entry_address)?;
@@ -86,18 +85,16 @@ pub fn get_agent_transaction_addresses_from_dht(
 
 pub fn validate_transactions_against_attestations(
     attestation_transaction_addresses: &Vec<Address>,
-    chain_entries: &Vec<(ChainHeader, Entry)>,
+    source_chain_addresses: &Vec<Address>,
 ) -> ZomeApiResult<()> {
-    if attestation_transaction_addresses.len() != chain_entries.len() {
+    if attestation_transaction_addresses.len() != source_chain_addresses.len() {
         return Err(ZomeApiError::from(String::from(
             "Chain entries received from the sender do not match the attestation entries",
         )));
     }
 
-    for i in 0..chain_entries.len() {
-        if attestation_transaction_addresses.get(i).unwrap()
-            != chain_entries.get(i).unwrap().0.entry_address()
-        {
+    for i in 0..source_chain_addresses.len() {
+        if attestation_transaction_addresses.get(i) != source_chain_addresses.get(i) {
             return Err(ZomeApiError::from(String::from(
                 "Chain entries received from the sender do not match the attestation entries",
             )));

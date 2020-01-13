@@ -4,7 +4,6 @@ use hdk::prelude::{QueryArgsOptions, QueryResult};
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        chain_header::ChainHeader,
         signature::{Provenance, Signature},
         time::Timeout,
     },
@@ -40,7 +39,7 @@ pub fn send_amout(
     let message = MessageBody {
         transaction,
         signature,
-        chain_entries: transactions,
+        old_transactions: transactions,
     };
 
     let signature = hdk::send(
@@ -68,18 +67,27 @@ pub fn send_amout(
     Ok(transaction_address)
 }
 
-pub fn get_own_transactions() -> ZomeApiResult<Vec<(ChainHeader, Entry)>> {
+pub fn get_own_transactions() -> ZomeApiResult<Vec<Transaction>> {
+    let chain_entries = get_chain_entries("transaction".into())?;
+
+    Ok(chain_entries
+        .into_iter()
+        .filter_map(|entry| Transaction::from_entry(&entry.1))
+        .collect())
+}
+
+pub fn get_chain_entries(entry_type: String) -> ZomeApiResult<Vec<(Address, Entry)>> {
     let options = QueryArgsOptions {
         start: 0,
         limit: 0,
-        headers: true,
+        headers: false,
         entries: true,
     };
 
-    let result = hdk::query_result(QueryArgsNames::from("transaction"), options)?;
+    let result = hdk::query_result(QueryArgsNames::from(entry_type), options)?;
 
     match result {
-        QueryResult::HeadersWithEntries(entries) => Ok(entries),
+        QueryResult::Entries(entries) => Ok(entries),
         _ => Err(ZomeApiError::from(String::from(
             "Error when getting own transactions",
         ))),
