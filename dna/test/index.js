@@ -18,7 +18,7 @@ process.on("unhandledRejection", error => {
   console.error("got unhandledRejection:", error);
 });
 
-const dnaPath = path.join(__dirname, "../dist/hc-mutual-credit.dna.json");
+const dnaPath = path.join(__dirname, "../dist/dna.dna.json");
 
 const dna = Config.dna(dnaPath, "scaffold-test");
 const conductorConfig = Config.gen(
@@ -69,6 +69,10 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   t.ok(result.Ok);
 
   result = await sendAmount(bobAddress, 91)(alice);       // Alice would have -101, not valid!
+  await s.consistency();
+  t.notOk(result.Ok);
+
+  result = await sendAmount(aliceAddress, 115)(bob);       // Bob would have -105, not valid!
   await s.consistency();
   t.notOk(result.Ok);
 

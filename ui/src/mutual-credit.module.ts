@@ -10,7 +10,7 @@ import {
   createHolochainProvider
 } from '@uprtcl/connections';
 
-import { MyTransactions } from './elements/mutual-credit-my-transaction';
+import { MyTransactions } from './elements/mutual-credit-my-transactions';
 
 import en from '../i18n/en.json';
 import { mutualCreditTypeDefs } from './graphql/schema';

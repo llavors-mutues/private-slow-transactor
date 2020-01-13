@@ -1,0 +1,22 @@
+{
+  "scripts": {
+    "start:build": "cd dist && es-dev-server --open",
+    "build": "webpack --mode=production",
+    "start": "es-dev-server --app-index index.html --node-resolve --open --watch"
+  },
+  "devDependencies": {
+    "@open-wc/building-webpack": "^2.1.0",
+    "webpack": "^4.28.0",
+    "webpack-cli": "^3.3.4",
+    "es-dev-server": "^1.5.0"
+  },
+  "name": "mutual-credit-demo",
+  "version": "0.0.0",
+  "description": "Webcomponent mutual-credit-demo following open-wc recommendations",
+  "author": "mutual-credit-demo",
+  "license": "MIT",
+  "dependencies": {
+    "lit-html": "^1.0.0",
+    "lit-element": "^2.0.1"
+  }
+}

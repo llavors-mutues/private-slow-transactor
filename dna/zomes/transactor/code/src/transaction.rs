@@ -1,9 +1,14 @@
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::dna::entry_types::Sharing;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-use hdk::{holochain_core_types::entry::Entry, holochain_persistence_api::cas::content::Address};
+use hdk::{
+    error::{ZomeApiError, ZomeApiResult},
+    holochain_core_types::entry::Entry,
+    holochain_persistence_api::cas::content::Address,
+};
 use std::convert::TryFrom;
 
+use crate::attestation::Attestation;
 use crate::utils::get_chain_agent_id;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
@@ -12,6 +17,24 @@ pub struct Transaction {
     pub receiver_address: Address,
     pub timestamp: usize,
     pub amount: usize,
+}
+
+impl Transaction {
+    pub fn from_entry(entry: &Entry) -> Option<Transaction> {
+        match entry {
+            Entry::App(entry_type, transaction_entry) => {
+                if entry_type.to_string() != "transaction" {
+                    return None;
+                }
+
+                match Transaction::try_from(transaction_entry) {
+                    Ok(t) => Some(t),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
 }
 
 pub fn transaction_entry(transaction: &Transaction) -> Entry {
@@ -43,21 +66,26 @@ pub fn entry_definition() -> ValidatingEntryType {
                     let chain_entries = validation_data.package.source_chain_entries.unwrap().clone();
                     let agent_address = get_chain_agent_id(&chain_entries)?;
 
-                    if let Some(credit_limit) = crate::get_credit_limit(&agent_address)? {
+                    let mut transactions = get_transactions(&chain_entries);
+                    transactions.push(entry.clone());
 
-                        let mut transactions = get_transactions(&chain_entries);
-                        transactions.push(entry);
+                    // 3. Check that the balance is not less than the credit limit
+                    validate_transactions(&agent_address, transactions)?;
 
-                        // Get the balance for this agent
-                        let balance = compute_balance(&agent_address, transactions);
-
-                        // 3. Check that the balance is not less than the credit limit
-                        if balance < credit_limit {
-                            return Err(String::from("Agent does not have enough credit"));
-                        }
+                    // 4. If this is the sender's chain, check that there is an attestation for the transaction
+                    if agent_address == entry.receiver_address {
+                        return Ok(());
                     }
 
-                    Ok(())
+                    let last_attestation = get_last_attestation(&chain_entries)?;
+                    let transaction_address = hdk::entry_address(&transaction_entry(&entry))?;
+
+                    if let Some(last_transaction_address) = last_attestation.last_transaction_address {
+                        if last_transaction_address == transaction_address {
+                            return Ok(());
+                        }
+                    }
+                    return Err(String::from("Transaction entry must be preceded by its attestation"));
                 },
             _ => Err(String::from("Only create transaction is allowed"))
             }
@@ -68,20 +96,25 @@ pub fn entry_definition() -> ValidatingEntryType {
 pub fn get_transactions(entries: &Vec<Entry>) -> Vec<Transaction> {
     entries
         .into_iter()
-        .filter_map(|entry| match entry {
-            Entry::App(entry_type, transaction_entry) => {
-                if entry_type.to_string() != "transaction" {
-                    return None;
-                }
+        .filter_map(|entry| Transaction::from_entry(entry))
+        .collect()
+}
 
-                match Transaction::try_from(transaction_entry) {
-                    Ok(t) => Some(t),
-                    _ => None,
+pub fn get_last_attestation(entries: &Vec<Entry>) -> ZomeApiResult<Attestation> {
+    let maybe_attestation = entries.first();
+    if let Some(attestation_entry) = maybe_attestation {
+        if let Entry::App(entry_type, attestation_entry) = attestation_entry {
+            if entry_type.to_string() == "attestation" {
+                if let Ok(a) = Attestation::try_from(attestation_entry) {
+                    return Ok(a);
                 }
             }
-            _ => None,
-        })
-        .collect()
+        }
+    }
+
+    Err(ZomeApiError::from(String::from(
+        "Last entry is not an attestation",
+    )))
 }
 
 pub fn compute_balance(agent_address: &Address, transactions: Vec<Transaction>) -> isize {
@@ -96,4 +129,22 @@ pub fn compute_balance(agent_address: &Address, transactions: Vec<Transaction>) 
     }
 
     balance
+}
+
+pub fn validate_transactions(
+    agent_address: &Address,
+    transactions: Vec<Transaction>,
+) -> ZomeApiResult<()> {
+    if let Some(credit_limit) = crate::get_credit_limit(agent_address)? {
+        // Get the balance for this agent
+        let balance = compute_balance(agent_address, transactions);
+
+        if balance < credit_limit {
+            return Err(ZomeApiError::from(String::from(
+                "Agent does not have enough credit",
+            )));
+        }
+    }
+
+    Ok(())
 }

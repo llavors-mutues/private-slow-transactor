@@ -21,6 +21,7 @@ use hdk_proc_macros::zome;
 
 use std::convert::TryInto;
 
+pub mod attestation;
 pub mod message;
 pub mod receiver;
 pub mod sender;
@@ -47,6 +48,11 @@ mod transaction {
         transaction::entry_definition()
     }
 
+    #[entry_def]
+    fn attestation_entry_def() -> ValidatingEntryType {
+        attestation::entry_definition()
+    }
+
     #[zome_fn("hc_public")]
     fn send_amount(
         receiver_address: Address,
@@ -60,7 +66,7 @@ mod transaction {
     pub fn receive(address: Address, message: JsonString) -> String {
         let success: Result<MessageBody, _> = JsonString::from_json(&message).try_into();
         match success {
-            Err(err) => format!("error: {}", err),
+            Err(err) => format!("Error: {}", err),
             Ok(message) => {
                 /* let r = hdk::emit_signal(
                     message.signal.as_str(),
@@ -69,7 +75,7 @@ mod transaction {
                 json!(r).to_string() */
                 match receiver::validate_and_commit_transaction(address, message) {
                     Ok(signature) => signature,
-                    Err(err) => format!("There was an error validating the transaction: {}", err),
+                    Err(err) => format!("Error: there was an error validating the transaction: {}", err),
                 }
             }
         }
