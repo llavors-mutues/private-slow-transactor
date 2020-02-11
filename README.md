@@ -7,6 +7,7 @@ This zome is a generic implementation of a mutual credit system. It's just a pie
 
 Next tasks:
 
+* [ ] Security audit to protect from "double-spending" (rolling your chain back and doing a new transaction) attack vectors
 * [ ] Create a reusable UI module
 * [ ] Add the ability to pass in the currency name and credit limit as parameter
 * [ ] Make it optional to have the entries private
