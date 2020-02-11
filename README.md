@@ -11,3 +11,23 @@ Next tasks:
 * [ ] Create a reusable UI module
 * [ ] Add the ability to pass in the currency name and credit limit as parameter
 * [ ] Make it optional to have the entries private
+
+## Building
+
+Run these commands:
+
+```bash
+nix-shell
+cd dna
+hc package
+```
+## Testing
+
+Run these commands:
+
+```bash
+nix-shell
+cd dna
+hc test
+```
+
