@@ -1,4 +1,4 @@
-export const MutualCreditTypes = {
+export const MutualCreditBindings = {
   MutualCreditProvider: Symbol("mutual-credit-provider")
 };
 

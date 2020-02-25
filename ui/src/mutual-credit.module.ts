@@ -14,7 +14,7 @@ import { MyTransactions } from './elements/mutual-credit-my-transactions';
 
 import en from '../i18n/en.json';
 import { mutualCreditTypeDefs } from './graphql/schema';
-import { MutualCreditTypes } from './types';
+import { MutualCreditBindings } from './types';
 import { resolvers } from './graphql/resolvers';
 
 export class MutualCreditModule extends MicroModule {
@@ -22,7 +22,7 @@ export class MutualCreditModule extends MicroModule {
 
   dependencies = [HolochainConnectionModule.id];
 
-  static types = MutualCreditTypes;
+  static bindings = MutualCreditBindings;
 
   constructor(protected instance: string) {
     super();
