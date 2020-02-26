@@ -1,4 +1,4 @@
-# hc-mutual-credit
+# Holochain generic mutual-credit
 Generic mutual-credit implementation in Holochain
 
 > Work in progress: This is not production ready!
