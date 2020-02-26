@@ -1,9 +1,10 @@
 # Holochain generic mutual-credit
-Generic mutual-credit implementation in Holochain
 
-> Work in progress: This is not production ready!
+Generic mutual-credit implementation in Holochain.
 
 This zome is a generic implementation of a mutual credit system. It's just a piece of the puzzle, and maybe best used with some other zome that implements better membranes.
+
+> This is a work in progress, not production ready. Contact us if you want to collaborate!
 
 ## Todo list:
 
