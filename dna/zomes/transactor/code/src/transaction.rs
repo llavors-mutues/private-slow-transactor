@@ -9,7 +9,6 @@ use hdk::{
 use std::convert::TryFrom;
 
 use crate::attestation::Attestation;
-use crate::utils::get_chain_agent_id;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Transaction {
@@ -44,48 +43,15 @@ pub fn transaction_entry(transaction: &Transaction) -> Entry {
 pub fn entry_definition() -> ValidatingEntryType {
     entry!(
         name: "transaction",
-        description: "this is a same entry defintion",
-        sharing: Sharing::Public,
+        description: "private transactions that ",
+        sharing: Sharing::Private,
         validation_package: || {
             hdk::ValidationPackageDefinition::ChainFull
         },
         validation: |_validation_data: hdk::EntryValidationData<Transaction>| {
             match _validation_data {
                 hdk::EntryValidationData::Create { entry, validation_data } => {
-                    // 1. Check if receiver and sender are not the same
-                    if entry.receiver_address == entry.sender_address {
-                        return Err(String::from("Receiver and sender cannot be the same"));
-                    }
-
-                    /*
-                    // 2. Check that the receiver and the sender have both signed the transaction
-                    let sources = validation_data.sources();
-                    if !sources.contains(&entry.receiver_address) || !sources.contains(&entry.sender_address) {
-                        return Err(String::from("Transaction must be signed by sender and receiver"));
-                    } */
-                    let chain_entries = validation_data.package.source_chain_entries.unwrap().clone();
-                    let agent_address = get_chain_agent_id(&chain_entries)?;
-
-                    let mut transactions = get_transactions(&chain_entries);
-                    transactions.push(entry.clone());
-
-                    // 3. Check that the balance is not less than the credit limit
-                    validate_transactions(&agent_address, transactions)?;
-
-                    // 4. If this is the sender's chain, check that there is an attestation for the transaction
-                    if agent_address == entry.receiver_address {
-                        return Ok(());
-                    }
-
-                    let last_attestation = get_last_attestation(&chain_entries)?;
-                    let transaction_address = hdk::entry_address(&transaction_entry(&entry))?;
-
-                    if let Some(last_transaction_address) = last_attestation.last_transaction_address {
-                        if last_transaction_address == transaction_address {
-                            return Ok(());
-                        }
-                    }
-                    return Err(String::from("Transaction entry must be preceded by its attestation"));
+                    Ok(())
                 },
             _ => Err(String::from("Only create transaction is allowed"))
             }

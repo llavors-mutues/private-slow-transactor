@@ -1,16 +1,31 @@
 use crate::message::MessageBody;
+use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::time::Timeout;
-use hdk::prelude::*;
-use hdk::AGENT_ADDRESS;
+use hdk::holochain_json_api::{error::JsonError, json::JsonString};
+use hdk::holochain_persistence_api::cas::content::Address;
+use hdk::{
+    error::{ZomeApiError, ZomeApiResult},
+    holochain_core_types::dna::entry_types::Sharing,
+    holochain_core_types::entry::Entry,
+    AGENT_ADDRESS,
+};
+use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, QueryResult};
+use std::convert::TryFrom;
 
-#[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+pub struct OfferExecutable {
+    executable: bool,
+    last_header_address: Address,
+}
+
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub enum OfferState {
     Pending,
     Declined,
     Completed,
 }
 
-#[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Offer {
     pub sender_address: Address,
     pub receiver_address: Address,
@@ -21,6 +36,22 @@ pub struct Offer {
 impl Offer {
     pub fn entry(self) -> Entry {
         Entry::App("offer".into(), self.into())
+    }
+
+    pub fn from_entry(entry: &Entry) -> ZomeApiResult<Offer> {
+        match entry {
+            Entry::App(entry_type, offer_entry) => {
+                if entry_type.to_string() != "offer" {
+                    return Err(ZomeApiError::from(format!("Given entry is not an offer")));
+                }
+
+                match Offer::try_from(offer_entry) {
+                    Ok(t) => Ok(t),
+                    _ => Err(ZomeApiError::from(format!("Given entry is not an offer"))),
+                }
+            }
+            _ => Err(ZomeApiError::from(format!("Given entry is not an offer"))),
+        }
     }
 }
 
@@ -85,4 +116,60 @@ pub fn receive_offer(offer: Offer) -> ZomeApiResult<()> {
 
     hdk::commit_entry(&offer.entry())?;
     Ok(())
+}
+
+/**
+ * Gets the offer from the private chain
+ */
+pub fn get_offer(offer_address: &Address) -> ZomeApiResult<Offer> {
+    let options = QueryArgsOptions {
+        start: 0,
+        limit: 0,
+        headers: true,
+        entries: true,
+    };
+    let query_result = hdk::query_result(QueryArgsNames::from(vec!["offer"]), options)?;
+
+    match query_result {
+        QueryResult::HeadersWithEntries(entries_with_headers) => {
+            let entry_with_header = entries_with_headers
+                .iter()
+                .find(|entry_and_header| entry_and_header.0.entry_address() == offer_address);
+
+            match entry_with_header {
+                Some(offer_entry_with_header) => Offer::from_entry(&offer_entry_with_header.1),
+                None => Err(ZomeApiError::from(format!("Given offer was not found"))),
+            }
+        }
+        _ => Err(ZomeApiError::from(format!("Unable to get offers"))),
+    }
+}
+
+/**
+ * Returns whether the offer is executable, and the last_header_address of the chain of the agent that made the offer
+ */
+pub fn is_offer_executable(offer_address: Address) -> ZomeApiResult<OfferExecutable> {
+    let offer = get_offer(&offer_address)?;
+
+    // For now we assume that the offer is to another agent
+
+    let message = MessageBody::GetTransactions {
+        offer_address: offer_address.clone(),
+    };
+
+    let result = hdk::send(
+        offer.sender_address,
+        JsonString::from(message).to_string(),
+        Timeout::default(),
+    )?;
+
+    if result.contains("Err") {
+        return Err(ZomeApiError::from(format!(
+            "Error getting the transactions from agent {}: {:?}",
+            offer.sender_address, result
+        )));
+    }
+
+    
+
 }

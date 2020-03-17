@@ -31,6 +31,7 @@ pub mod utils;
 
 use crate::message::MessageBody;
 
+
 #[zome]
 mod transaction {
 
@@ -64,7 +65,10 @@ mod transaction {
         offer::send_offer_to(receiver_address, amount)
     }
 
-    
+    #[zome_fn("hc_public")]
+    pub fn is_offer_executable(offer_address: Address) -> ZomeApiResult<OfferExecutable> {
+        
+    }
 
     #[receive]
     pub fn receive(address: Address, message: JsonString) -> String {
