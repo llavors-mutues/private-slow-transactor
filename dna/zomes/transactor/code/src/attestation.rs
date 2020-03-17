@@ -86,7 +86,7 @@ pub fn entry_definition() -> ValidatingEntryType {
                     ..
                  } => {
                     if new_entry.sender_address != old_entry.sender_address {
-                         return Err(String::from("Cannot modify sender address of an attestation"));
+                        return Err(String::from("Cannot modify sender address of an attestation"));
                     }
 
                     Ok(())

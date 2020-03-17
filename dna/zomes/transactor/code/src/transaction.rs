@@ -16,7 +16,7 @@ pub struct Transaction {
     pub sender_address: Address,
     pub receiver_address: Address,
     pub timestamp: usize,
-    pub amount: usize,
+    pub amount: f64,
 }
 
 impl Transaction {

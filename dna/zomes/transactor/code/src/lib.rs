@@ -23,6 +23,7 @@ use std::convert::TryInto;
 
 pub mod attestation;
 pub mod message;
+pub mod offer;
 pub mod receiver;
 pub mod sender;
 pub mod transaction;
@@ -53,30 +54,31 @@ mod transaction {
         attestation::entry_definition()
     }
 
-    #[zome_fn("hc_public")]
-    fn send_amount(
-        receiver_address: Address,
-        amount: usize,
-        timestamp: usize,
-    ) -> ZomeApiResult<Address> {
-        sender::send_amout(receiver_address, amount, timestamp)
+    #[entry_def]
+    fn offer_entry_def() -> ValidatingEntryType {
+        offer::entry_definition()
     }
+
+    #[zome_fn("hc_public")]
+    pub fn offer_credits(receiver_address: Address, amount: f64) -> ZomeApiResult<Address> {
+        offer::send_offer_to(receiver_address, amount)
+    }
+
+    
 
     #[receive]
     pub fn receive(address: Address, message: JsonString) -> String {
         let success: Result<MessageBody, _> = JsonString::from_json(&message).try_into();
         match success {
-            Err(err) => format!("Error: {}", err),
-            Ok(message) => {
-                /* let r = hdk::emit_signal(
-                    message.signal.as_str(),
-                    JsonString::from_json(&format!("{{message: {:?}}}", message)),
-                );
-                json!(r).to_string() */
-                match receiver::validate_and_commit_transaction(address, message) {
-                    Ok(signature) => signature,
-                    Err(err) => format!("Error: there was an error validating the transaction: {}", err),
-                }
+            Err(err) => format!("Error: {:?}", err),
+            Ok(message_body) => {
+                let result = match message_body {
+                    MessageBody::SendOffer(offer) => offer::receive_offer(offer),
+                    _ => Ok(())
+                };
+
+                let json: JsonString = result.into();
+                json.to_string()
             }
         }
     }
