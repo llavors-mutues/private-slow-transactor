@@ -1,4 +1,5 @@
 use hdk::entry_definition::ValidatingEntryType;
+use hdk::holochain_core_types::signature::Signature;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
 use hdk::{
@@ -8,12 +9,10 @@ use hdk::{
 
 use std::convert::TryFrom;
 
-use crate::utils::get_chain_agent_id;
-
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Attestation {
     pub sender_address: Address,
-    pub last_transaction_address: Option<Address>,
+    pub transaction_headers: Vec<(Address, Signature)>,
 }
 
 impl Attestation {

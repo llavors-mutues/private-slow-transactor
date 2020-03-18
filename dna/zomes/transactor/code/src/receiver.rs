@@ -1,14 +1,39 @@
+use hdk::holochain_json_api::json::JsonString;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::signature::{Provenance, Signature},
     holochain_persistence_api::cas::content::Address,
 };
+use std::convert::TryInto;
 
 use crate::attestation::{attestation_entry, Attestation};
-use crate::message::MessageBody;
-use crate::transaction::{transaction_entry, validate_transactions};
+use crate::message::{Message, MessageBody};
+use crate::offer;
+use crate::transaction::transaction_entry;
 use crate::utils;
 
+/**
+ * Receive message, recognizing the type of message and executing the appropriate actions
+ */
+pub fn receive_message(sender_address: Address, message: String) -> String {
+    let success: Result<MessageBody, _> = JsonString::from_json(&message).try_into();
+    let response = match success {
+        Err(err) => Err(ZomeApiError::from(format!(
+            "Error deserializing the message: {:?}",
+            err
+        ))),
+        Ok(message_body) => match message_body {
+            MessageBody::SendOffer(Message::Request(offer)) => offer::receive_offer(offer)
+                .map(|result| MessageBody::SendOffer(Message::Response(result))),
+            _ => Err(ZomeApiError::from(format!("Bad message type"))),
+        },
+    };
+
+    let json: JsonString = response.into();
+    json.to_string()
+}
+
+// -----------
 pub fn validate_and_commit_transaction(
     address: Address,
     message: MessageBody,

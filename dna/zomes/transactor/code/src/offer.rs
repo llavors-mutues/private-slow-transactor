@@ -1,6 +1,7 @@
-use crate::message::MessageBody;
+use crate::message::{send_message, Message, GetTransactionsResponse, MessageBody};
+use crate::transaction;
+use crate::transaction::{Transaction, TransactionsSnapshot};
 use hdk::entry_definition::ValidatingEntryType;
-use hdk::holochain_core_types::time::Timeout;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
 use hdk::{
@@ -13,7 +14,8 @@ use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, 
 use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-pub struct OfferExecutable {
+pub struct OfferBalance {
+    sender_balance: f64,
     executable: bool,
     last_header_address: Address,
 }
@@ -21,7 +23,7 @@ pub struct OfferExecutable {
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub enum OfferState {
     Pending,
-    Declined,
+    Canceled,
     Completed,
 }
 
@@ -81,25 +83,17 @@ pub fn send_offer_to(receiver_address: Address, amount: f64) -> ZomeApiResult<Ad
         state: OfferState::Pending,
     };
 
-    let message = MessageBody::SendOffer(offer);
+    let message_body = MessageBody::SendOffer(Message::Request(offer));
 
-    let result = hdk::send(
-        receiver_address,
-        JsonString::from(message).to_string(),
-        Timeout::default(),
-    )?;
+    let result = send_message(receiver_address, message_body)?;
 
-    if !result.contains("Ok") {
-        return Err(ZomeApiError::from(format!(
+    match result {
+        MessageBody::SendOffer(Message::Response(())) => hdk::commit_entry(&offer.entry()),
+        _ => Err(ZomeApiError::from(format!(
             "Received error when offering credits, {:?}",
             result
-        )));
+        ))),
     }
-
-    // Create our private entry
-    let offer_entry = offer.entry();
-
-    hdk::commit_entry(&offer_entry)
 }
 
 /**
@@ -146,30 +140,71 @@ pub fn get_offer(offer_address: &Address) -> ZomeApiResult<Offer> {
 }
 
 /**
- * Returns whether the offer is executable, and the last_header_address of the chain of the agent that made the offer
+ * Returns the offer balance, whether it's executable, and the last_header_address of the chain of the agent that made the offer
  */
-pub fn is_offer_executable(offer_address: Address) -> ZomeApiResult<OfferExecutable> {
+pub fn get_offer_balance(offer_address: Address) -> ZomeApiResult<OfferBalance> {
     let offer = get_offer(&offer_address)?;
 
-    // For now we assume that the offer is to another agent
+    let transactions_snapshot = match offer.sender_address == AGENT_ADDRESS.clone() {
+        true => Err(ZomeApiError::from(format!("wait for it"))),
+        false => request_sender_transactions(&offer_address, &offer.sender_address)
+    }?;
 
-    let message = MessageBody::GetTransactions {
-        offer_address: offer_address.clone(),
+    let balance = transaction::compute_balance(&offer.sender_address, transactions_snapshot.transactions);
+
+    let next_transaction = Transaction {
+        sender_address: offer.sender_address,
+        receiver_address: offer.receiver_address,
+        amount: offer.amount,
+        timestamp: 0
     };
 
-    let result = hdk::send(
-        offer.sender_address,
-        JsonString::from(message).to_string(),
-        Timeout::default(),
-    )?;
-
-    if result.contains("Err") {
-        return Err(ZomeApiError::from(format!(
-            "Error getting the transactions from agent {}: {:?}",
-            offer.sender_address, result
-        )));
-    }
-
+    let executable = transaction::are_transactions_valid(&offer.sender_address, transactions_snapshot.transactions)?;
     
+    Ok(OfferBalance {
+        sender_balance: balance,
+        executable,
+        last_header_address: transactions_snapshot.last_header_address
+    })
+}
 
+/**
+ * Requests the transactions for the given offer_address from the sender_address agent, requesting their last header address for later validation
+ */
+pub fn request_sender_transactions(
+    offer_address: &Address,
+    sender_address: &Address,
+) -> ZomeApiResult<TransactionsSnapshot> {
+    let message = MessageBody::GetTransactions(Message::Request(offer_address.clone()));
+
+    let result = send_message(sender_address.clone(), message)?;
+
+    let response = match result {
+        MessageBody::GetTransactions(Message::Response(response)) => Ok(response),
+        _ => Err(ZomeApiError::from(format!(
+            "Error getting the transaction for agent {}",
+            sender_address
+        ))),
+    }?;
+
+    match response {
+        GetTransactionsResponse::Transactions(transactions_snapshot) => Ok(transactions_snapshot),
+        GetTransactionsResponse::OfferWasCanceled => {
+            cancel_offer(offer_address)?;
+            Err(ZomeApiError::from(format!("Offer was canceled")))
+        }
+    }
+}
+
+/**
+ * Updates the private offer to a canceled state
+ */
+pub fn cancel_offer(offer_address: &Address) -> ZomeApiResult<()> {
+    let mut offer = get_offer(offer_address)?;
+
+    offer.state = OfferState::Canceled;
+
+    hdk::update_entry(offer.entry(), offer_address)?;
+
+    Ok(())
 }

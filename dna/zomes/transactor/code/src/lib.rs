@@ -31,7 +31,6 @@ pub mod utils;
 
 use crate::message::MessageBody;
 
-
 #[zome]
 mod transaction {
 
@@ -66,25 +65,13 @@ mod transaction {
     }
 
     #[zome_fn("hc_public")]
-    pub fn is_offer_executable(offer_address: Address) -> ZomeApiResult<OfferExecutable> {
-        
+    pub fn get_offer_balance(offer_address: Address) -> ZomeApiResult<offer::OfferBalance> {
+        offer::get_offer_balance(offer_address)
     }
 
     #[receive]
     pub fn receive(address: Address, message: JsonString) -> String {
-        let success: Result<MessageBody, _> = JsonString::from_json(&message).try_into();
-        match success {
-            Err(err) => format!("Error: {:?}", err),
-            Ok(message_body) => {
-                let result = match message_body {
-                    MessageBody::SendOffer(offer) => offer::receive_offer(offer),
-                    _ => Ok(())
-                };
-
-                let json: JsonString = result.into();
-                json.to_string()
-            }
-        }
+        receiver::receive_message(address, message)
     }
 
     #[zome_fn("hc_public")]
@@ -98,6 +85,6 @@ mod transaction {
     }
 }
 
-pub fn get_credit_limit(_agent_address: &Address) -> ZomeApiResult<Option<isize>> {
-    Ok(Some(-100))
+pub fn get_credit_limit(_agent_address: &Address) -> ZomeApiResult<Option<f64>> {
+    Ok(Some(-100.0))
 }
