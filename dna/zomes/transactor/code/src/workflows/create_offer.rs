@@ -7,7 +7,7 @@ use crate::message::*;
  * Sends an offer to the receiver address, and when Creates a private offer to the given receiver address, setting up the transaction
  * Also send a direct message to the receiver notifying the offer
  */
-pub fn send_offer_to(receiver_address: Address, amount: f64) -> ZomeApiResult<Address> {
+pub fn create_offer(receiver_address: Address, amount: f64) -> ZomeApiResult<Address> {
     let offer = Offer {
         sender_address: AGENT_ADDRESS.clone(),
         receiver_address: receiver_address.clone(),

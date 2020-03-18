@@ -25,6 +25,13 @@ pub struct TransactionsSnapshot {
 pub fn get_offer_balance(offer_address: Address) -> ZomeApiResult<OfferBalance> {
     let offer = offer::get_offer(&offer_address)?;
 
+    match offer.state {
+        offer::OfferState::Pending => Ok(()),
+        _ => Err(ZomeApiError::from(format!(
+            "Offer is canceled: cannot get balance"
+        ))),
+    }?;
+
     let transactions_snapshot = match offer.sender_address.clone() == AGENT_ADDRESS.clone() {
         true => get_my_transactions_snapshot(),
         false => {
@@ -62,12 +69,12 @@ fn request_sender_transactions(
     offer_address: &Address,
     sender_address: &Address,
 ) -> ZomeApiResult<TransactionsSnapshot> {
-    let message = MessageBody::GetTransactions(Message::Request(offer_address.clone()));
+    let message = MessageBody::GetTransactions(OfferMessage::Request(offer_address.clone()));
 
     let result = send_message(sender_address.clone(), message)?;
 
     let response = match result {
-        MessageBody::GetTransactions(Message::Response(response)) => Ok(response),
+        MessageBody::GetTransactions(OfferMessage::Response(response)) => Ok(response),
         _ => Err(ZomeApiError::from(format!(
             "Error getting the transaction for agent {}",
             sender_address

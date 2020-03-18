@@ -59,27 +59,27 @@ mod transactor {
 
     #[zome_fn("hc_public")]
     pub fn offer_credits(receiver_address: Address, amount: f64) -> ZomeApiResult<Address> {
-        workflows::create_offer::send_offer_to(receiver_address, amount)
+        workflows::create_offer::create_offer(receiver_address, amount)
     }
 
     #[zome_fn("hc_public")]
     pub fn get_offer_balance(offer_address: Address) -> ZomeApiResult<OfferBalance> {
         workflows::get_offer_balance::get_offer_balance(offer_address)
     }
+    
+    #[zome_fn("hc_public")]
+    pub fn accept_offer(offer_address: Address, last_header_address: Address, timestamp: usize) -> ZomeApiResult<Address> {
+        workflows::accept_offer::accept_offer(offer_address, last_header_address, timestamp)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_my_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
+        transaction::get_all_my_transactions()
+    }
 
     #[receive]
     pub fn receive(address: Address, message: JsonString) -> String {
         message::receive_message(address, message)
-    }
-
-    #[zome_fn("hc_public")]
-    pub fn get_my_transactions() -> ZomeApiResult<Vec<Address>> {
-        hdk::query("transaction".into(), 0, 0)
-    }
-
-    #[zome_fn("hc_public")]
-    pub fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
-        hdk::get_entry(&address)
     }
 }
 

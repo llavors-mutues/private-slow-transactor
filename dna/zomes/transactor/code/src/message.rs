@@ -1,4 +1,9 @@
-use crate::{offer::Offer, workflows::get_offer_balance::TransactionsSnapshot, workflows::create_offer, workflows::get_offer_balance};
+use crate::{
+    offer::Offer,
+    workflows::{
+        accept_offer, create_offer, get_offer_balance, get_offer_balance::TransactionsSnapshot,
+    },
+};
 use hdk::holochain_core_types::{chain_header::ChainHeader, signature::Signature, time::Timeout};
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::prelude::*;
@@ -22,7 +27,7 @@ pub enum OfferResponse<Res> {
 pub enum MessageBody {
     SendOffer(Message<Offer, ()>),
     GetTransactions(OfferMessage<Address, TransactionsSnapshot>),
-    AcceptOffer(OfferMessage<Address, (ChainHeader, Signature)>),
+    AcceptOffer(OfferMessage<accept_offer::AcceptOfferRequest, (ChainHeader, Signature)>),
 }
 
 /**
@@ -60,10 +65,14 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
             err
         ))),
         Ok(message_body) => match message_body {
-            MessageBody::SendOffer(Message::Request(offer)) => create_offer::receive_offer(sender_address, offer)
-                .map(|result| MessageBody::SendOffer(Message::Response(result))),
-            MessageBody::GetTransactions(OfferMessage::Request(offer_address)) => get_offer_balance::get_my_transactions_snapshot_for_offer(offer_address)
-                .map(|result| MessageBody::GetTransactions(OfferMessage::Response(result))),
+            MessageBody::SendOffer(Message::Request(offer)) => {
+                create_offer::receive_offer(sender_address, offer)
+                    .map(|result| MessageBody::SendOffer(Message::Response(result)))
+            }
+            MessageBody::GetTransactions(OfferMessage::Request(offer_address)) => {
+                get_offer_balance::get_my_transactions_snapshot_for_offer(offer_address)
+                    .map(|result| MessageBody::GetTransactions(OfferMessage::Response(result)))
+            }
             _ => Err(ZomeApiError::from(format!("Bad message type"))),
         },
     };

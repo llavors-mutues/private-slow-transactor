@@ -42,11 +42,15 @@ impl Offer {
     }
 
     pub fn to_hypotetical_transaction(&self) -> Transaction {
+        self.to_transaction(0)
+    }
+
+    pub fn to_transaction(&self, timestamp: usize) -> Transaction {
         Transaction {
             sender_address: self.sender_address.clone(),
             receiver_address: self.receiver_address.clone(),
             amount: self.amount.clone(),
-            timestamp: 0,
+            timestamp,
         }
     }
 }
@@ -105,9 +109,23 @@ pub fn get_offer(offer_address: &Address) -> ZomeApiResult<Offer> {
  * Updates the private offer to a canceled state
  */
 pub fn cancel_offer(offer_address: &Address) -> ZomeApiResult<()> {
+    update_offer_state(offer_address, OfferState::Canceled)
+}
+
+/**
+ * Updates the private offer to a completed state
+ */
+pub fn complete_offer(offer_address: &Address) -> ZomeApiResult<()> {
+    update_offer_state(offer_address, OfferState::Completed)
+}
+
+/**
+ * Updates the private offer to the given offer state
+ */
+fn update_offer_state(offer_address: &Address, offer_state: OfferState) -> ZomeApiResult<()> {
     let mut offer = get_offer(offer_address)?;
 
-    offer.state = OfferState::Canceled;
+    offer.state = offer_state;
 
     hdk::update_entry(offer.entry(), offer_address)?;
 
