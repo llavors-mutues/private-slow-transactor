@@ -1,7 +1,6 @@
 use hdk::entry_definition::ValidatingEntryType;
-use hdk::holochain_core_types::{chain_header::ChainHeader, dna::entry_types::Sharing};
+use hdk::holochain_core_types::dna::entry_types::Sharing;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-use hdk::prelude::AddressableContent;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::entry::Entry,
@@ -9,14 +8,6 @@ use hdk::{
 };
 use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, QueryResult};
 use std::convert::TryFrom;
-
-use crate::attestation::Attestation;
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-pub struct TransactionsSnapshot {
-    pub transactions: Vec<Transaction>,
-    pub last_header_address: Address,
-}
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Transaction {
@@ -42,10 +33,14 @@ impl Transaction {
             _ => None,
         }
     }
-}
 
-pub fn transaction_entry(transaction: &Transaction) -> Entry {
-    Entry::App("transaction".into(), transaction.clone().into())
+    pub fn entry(&self) -> Entry {
+        Entry::App("transaction".into(), self.clone().into())
+    }
+
+    pub fn address(&self) -> ZomeApiResult<Address> {
+        hdk::entry_address(&self.entry())
+    }
 }
 
 pub fn entry_definition() -> ValidatingEntryType {
@@ -58,47 +53,13 @@ pub fn entry_definition() -> ValidatingEntryType {
         },
         validation: |_validation_data: hdk::EntryValidationData<Transaction>| {
             match _validation_data {
-                hdk::EntryValidationData::Create { entry, validation_data } => {
+                hdk::EntryValidationData::Create { .. } => {
                     Ok(())
                 },
             _ => Err(String::from("Only create transaction is allowed"))
             }
         }
     )
-}
-
-/**
- * Get the list of transactions and the last header from the source chain
- */
-pub fn get_my_transactions_snapshot() -> ZomeApiResult<TransactionsSnapshot> {
-    let last_header = get_my_last_header()?;
-    let transactions = get_all_my_transactions()?;
-
-    Ok(TransactionsSnapshot {
-        last_header_address: last_header.address(),
-        transactions,
-    })
-}
-
-/**
- * Gets the last header of my source chain
- */
-pub fn get_my_last_header() -> ZomeApiResult<ChainHeader> {
-    let options = QueryArgsOptions {
-        start: 0,
-        limit: 0,
-        entries: false,
-        headers: true,
-    };
-    let query_result = hdk::query_result(QueryArgsNames::from("*"), options)?;
-
-    match query_result {
-        QueryResult::Headers(headers) => headers
-            .first()
-            .ok_or(ZomeApiError::from(format!("Error getting the last header")))
-            .map(|h| h.clone()),
-        _ => Err(ZomeApiError::from(format!("Error getting the last header"))),
-    }
 }
 
 /**
@@ -127,7 +88,7 @@ pub fn get_all_my_transactions() -> ZomeApiResult<Vec<Transaction>> {
 /**
  * Computes the balance for the given list of transactions and the given agent_address
  */
-pub fn compute_balance(agent_address: &Address, transactions: Vec<Transaction>) -> f64 {
+pub fn compute_balance(agent_address: &Address, transactions: &Vec<Transaction>) -> f64 {
     let mut balance: f64 = 0.0;
 
     for transaction in transactions {
@@ -146,7 +107,7 @@ pub fn compute_balance(agent_address: &Address, transactions: Vec<Transaction>) 
  */
 pub fn are_transactions_valid(
     agent_address: &Address,
-    transactions: Vec<Transaction>,
+    transactions: &Vec<Transaction>,
 ) -> ZomeApiResult<bool> {
     if let Some(credit_limit) = crate::get_credit_limit(agent_address)? {
         // Get the balance for this agent
@@ -158,4 +119,28 @@ pub fn are_transactions_valid(
     }
 
     Ok(true)
+}
+
+/**
+ * Returns Ok(()) only if both vector of addresses is identical
+ */
+pub fn validate_transactions_against_attestations(
+    attestation_transaction_addresses: &Vec<Address>,
+    source_chain_addresses: &Vec<Address>,
+) -> ZomeApiResult<()> {
+    if attestation_transaction_addresses.len() != source_chain_addresses.len() {
+        return Err(ZomeApiError::from(String::from(
+            "Chain entries received from the sender do not match the attestation entries",
+        )));
+    }
+
+    for i in 0..source_chain_addresses.len() {
+        if attestation_transaction_addresses.get(i) != source_chain_addresses.get(i) {
+            return Err(ZomeApiError::from(String::from(
+                "Chain entries received from the sender do not match the attestation entries",
+            )));
+        }
+    }
+
+    Ok(())
 }

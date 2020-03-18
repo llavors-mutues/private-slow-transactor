@@ -19,20 +19,18 @@ use hdk::holochain_persistence_api::cas::content::Address;
 
 use hdk_proc_macros::zome;
 
-use std::convert::TryInto;
+pub mod entries;
+use entries::transaction;
+use entries::attestation;
+use entries::offer;
 
-pub mod attestation;
+pub mod workflows;
 pub mod message;
-pub mod offer;
-pub mod receiver;
-pub mod sender;
-pub mod transaction;
-pub mod utils;
 
-use crate::message::MessageBody;
+use workflows::get_offer_balance::OfferBalance;
 
 #[zome]
-mod transaction {
+mod transactor {
 
     #[init]
     fn init() {
@@ -61,17 +59,17 @@ mod transaction {
 
     #[zome_fn("hc_public")]
     pub fn offer_credits(receiver_address: Address, amount: f64) -> ZomeApiResult<Address> {
-        offer::send_offer_to(receiver_address, amount)
+        workflows::create_offer::send_offer_to(receiver_address, amount)
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_offer_balance(offer_address: Address) -> ZomeApiResult<offer::OfferBalance> {
-        offer::get_offer_balance(offer_address)
+    pub fn get_offer_balance(offer_address: Address) -> ZomeApiResult<OfferBalance> {
+        workflows::get_offer_balance::get_offer_balance(offer_address)
     }
 
     #[receive]
     pub fn receive(address: Address, message: JsonString) -> String {
-        receiver::receive_message(address, message)
+        message::receive_message(address, message)
     }
 
     #[zome_fn("hc_public")]

@@ -1,4 +1,4 @@
-use crate::{offer::Offer, transaction::TransactionsSnapshot};
+use crate::{offer::Offer, workflows::get_offer_balance::TransactionsSnapshot, workflows::create_offer, workflows::get_offer_balance};
 use hdk::holochain_core_types::{chain_header::ChainHeader, signature::Signature, time::Timeout};
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::prelude::*;
@@ -15,7 +15,7 @@ pub type OfferMessage<Req, Res> = Message<Req, OfferResponse<Res>>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum OfferResponse<Res> {
     OfferPending(Res),
-    OfferWasCanceled,
+    OfferNotPending,
 }
 
 #[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
@@ -47,4 +47,27 @@ pub fn send_message(
             "Could not deserialize direct message response"
         ))),
     }
+}
+
+/**
+ * Receive message, recognizing the type of message and executing the appropriate actions
+ */
+pub fn receive_message(sender_address: Address, message: String) -> String {
+    let success: Result<MessageBody, _> = JsonString::from_json(&message).try_into();
+    let response = match success {
+        Err(err) => Err(ZomeApiError::from(format!(
+            "Error deserializing the message: {:?}",
+            err
+        ))),
+        Ok(message_body) => match message_body {
+            MessageBody::SendOffer(Message::Request(offer)) => create_offer::receive_offer(sender_address, offer)
+                .map(|result| MessageBody::SendOffer(Message::Response(result))),
+            MessageBody::GetTransactions(OfferMessage::Request(offer_address)) => get_offer_balance::get_my_transactions_snapshot_for_offer(offer_address)
+                .map(|result| MessageBody::GetTransactions(OfferMessage::Response(result))),
+            _ => Err(ZomeApiError::from(format!("Bad message type"))),
+        },
+    };
+
+    let json: JsonString = response.into();
+    json.to_string()
 }
