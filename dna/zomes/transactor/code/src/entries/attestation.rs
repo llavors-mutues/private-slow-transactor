@@ -24,6 +24,7 @@ pub enum TransactionRole {
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct AttestationProof {
+    pub last_attestation_address: Address,
     pub transaction_address: Address,
     pub transaction_header: (Address, Signature),
     pub transaction_role: TransactionRole,
@@ -47,6 +48,56 @@ impl Attestation {
         Attestation {
             transaction_proof: None,
             agent_address: agent_address.clone(),
+        }
+    }
+
+    pub fn for_sender(
+        agent_address: &Address,
+        last_attestation_address: &Address,
+        transaction_address: &Address,
+        transaction_header_address: &Address,
+        header_signature: &Signature,
+        receiver_snapshot_proof: &Signature,
+    ) -> Attestation {
+        let transaction_role = TransactionRole::Sender {
+            receiver_snapshot_proof: receiver_snapshot_proof.clone(),
+        };
+
+        let attestation_proof = AttestationProof {
+            last_attestation_address: last_attestation_address.clone(),
+            transaction_address: transaction_address.clone(),
+            transaction_header: (transaction_header_address.clone(), header_signature.clone()),
+            transaction_role,
+        };
+
+        Attestation {
+            agent_address: agent_address.clone(),
+            transaction_proof: Some(attestation_proof),
+        }
+    }
+
+    pub fn for_receiver(
+        agent_address: &Address,
+        last_attestation_address: &Address,
+        transaction_address: &Address,
+        transaction_header_address: &Address,
+        header_signature: &Signature,
+        sender_attestation_address: &Address,
+    ) -> Attestation {
+        let transaction_role = TransactionRole::Receiver {
+            sender_attestation_address: sender_attestation_address.clone(),
+        };
+
+        let attestation_proof = AttestationProof {
+            last_attestation_address: last_attestation_address.clone(),
+            transaction_address: transaction_address.clone(),
+            transaction_header: (transaction_header_address.clone(), header_signature.clone()),
+            transaction_role,
+        };
+
+        Attestation {
+            agent_address: agent_address.clone(),
+            transaction_proof: Some(attestation_proof),
         }
     }
 }
@@ -160,12 +211,13 @@ pub fn query_my_last_attestation() -> ZomeApiResult<Attestation> {
  * Gets the attestation identified with the given address from the private chain
  */
 pub fn query_attestation(attestation_address: &Address) -> ZomeApiResult<Attestation> {
-    let attestations = utils::query_all_into(String::from("attestation"))?;
+    let attestations: Vec<(ChainHeader, Attestation)> =
+        utils::query_all_into(String::from("attestation"))?;
 
     attestations
         .iter()
         .find(|attestation| attestation.0.entry_address() == attestation_address)
-        .map(|a| a.1)
+        .map(|a| a.1.clone())
         .ok_or(ZomeApiError::from(format!(
             "Could not find attestation {}",
             attestation_address
@@ -207,6 +259,7 @@ fn validate_transaction_against_attestation(
 
     let transaction_proof = attestation
         .transaction_proof
+        .clone()
         .ok_or(ZomeApiError::from(format!(
             "Attestation does not contain transaction proof"
         )))?;
@@ -219,9 +272,7 @@ fn validate_transaction_against_attestation(
     }
 
     let role_valid = match transaction_proof.transaction_role {
-        TransactionRole::Sender {
-            receiver_snapshot_proof,
-        } => transaction.sender_address == attestation.agent_address,
+        TransactionRole::Sender { .. } => transaction.sender_address == attestation.agent_address,
         TransactionRole::Receiver { .. } => {
             transaction.receiver_address == attestation.agent_address
         }

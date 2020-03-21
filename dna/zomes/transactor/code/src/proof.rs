@@ -1,4 +1,4 @@
-use crate::{attestation, attestation::TransactionRole, proof, utils};
+use crate::{attestation, attestation::TransactionRole, proof, utils, utils::ParseableEntry};
 use hdk::{
     holochain_core_types::{
         chain_header::ChainHeader,
@@ -11,6 +11,7 @@ use hdk::{
 #[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
 pub struct TransactionCompletedProof {
     pub transaction_header: (ChainHeader, Signature),
+    pub last_attestation_address: Address,
     pub receiver_snapshot_proof: Signature,
 }
 
@@ -36,6 +37,8 @@ pub fn get_existing_transaction_proof(
         .transaction_proof
         .ok_or(ZomeApiError::from(format!("Invalid attestation")))?;
 
+    let last_attestation = attestation::query_my_last_attestation()?;
+
     match proof.transaction_role {
         TransactionRole::Receiver { .. } => Err(ZomeApiError::from(format!("Invalid attestation"))),
         TransactionRole::Sender {
@@ -45,6 +48,7 @@ pub fn get_existing_transaction_proof(
 
             Ok(TransactionCompletedProof {
                 transaction_header: (chain_header, proof.transaction_header.1),
+                last_attestation_address: last_attestation.address()?,
                 receiver_snapshot_proof,
             })
         }
@@ -60,7 +64,7 @@ pub fn query_header(header_address: Address) -> ZomeApiResult<ChainHeader> {
     headers_with_entries
         .iter()
         .find(|header_with_entry| header_with_entry.0.address() == header_address)
-        .map(|h| h.0)
+        .map(|h| h.0.clone())
         .ok_or(ZomeApiError::from(format!("Could not find header")))
 }
 

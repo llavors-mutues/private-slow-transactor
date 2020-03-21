@@ -49,7 +49,7 @@ pub fn entry_definition() -> ValidatingEntryType {
 pub fn query_offer(transaction_address: &Address) -> ZomeApiResult<Offer> {
     let offers: Vec<(ChainHeader, Offer)> = utils::query_all_into(String::from("offers"))?;
 
-    let maybe_offer = offers.iter().map(|next_offer| next_offer.1).find(|offer| {
+    let maybe_offer = offers.iter().map(|next_offer| next_offer.1.clone()).find(|offer| {
         match offer.transaction.address() {
             Ok(address) => address == transaction_address.clone(),
             Err(_) => false,

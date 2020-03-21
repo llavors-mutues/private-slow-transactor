@@ -1,15 +1,7 @@
-use super::AcceptOfferRequest;
+use super::{complete_offer_and_update_attestation, AcceptOfferRequest};
 use crate::{
-    attestation,
-    attestation::{Attestation, AttestationProof, TransactionRole},
-    message::OfferResponse,
-    offer,
-    offer::OfferState,
-    proof,
-    proof::TransactionCompletedProof,
-    transaction::Transaction,
-    utils,
-    utils::ParseableEntry,
+    attestation, attestation::Attestation, message::OfferResponse, offer, offer::OfferState, proof,
+    proof::TransactionCompletedProof, transaction::Transaction, utils, utils::ParseableEntry,
 };
 use hdk::{holochain_core_types::signature::Signature, prelude::*, AGENT_ADDRESS};
 
@@ -17,7 +9,7 @@ use hdk::{holochain_core_types::signature::Signature, prelude::*, AGENT_ADDRESS}
  * Process accept offer request, creating the transaction, updating the offer and updating the attestation
  */
 pub fn receive_accept_offer(request: AcceptOfferRequest) -> ZomeApiResult<OfferResponse<()>> {
-    let transaction_address = request.transaction_address;
+    let transaction_address = request.transaction_address.clone();
     let offer = offer::query_offer(&transaction_address)?;
 
     match offer.state {
@@ -45,31 +37,24 @@ pub fn create_transaction_and_attestation(
 
     let transaction_header_address = transaction_header.address();
 
-    let header_signature = Signature::from(hdk::sign(transaction_header_address)?);
-
-    let transaction_role = TransactionRole::Sender {
-        receiver_snapshot_proof: request.receiver_snapshot_proof,
-    };
-
-    let attestation_proof = AttestationProof {
-        transaction_address,
-        transaction_header: (transaction_header_address, header_signature),
-        transaction_role,
-    };
-
-    let attestation = Attestation {
-        agent_address: AGENT_ADDRESS.clone(),
-        transaction_proof: Some(attestation_proof),
-    };
-
+    let header_signature = Signature::from(hdk::sign(transaction_header_address.clone())?);
     let last_attestation = attestation::query_my_last_attestation()?;
+    let last_attestation_address = last_attestation.address()?;
 
-    let attestation_address = hdk::update_entry(attestation.entry(), &last_attestation.address()?)?;
+    let attestation = Attestation::for_sender(
+        &AGENT_ADDRESS.clone(),
+        &last_attestation_address,
+        &transaction_address,
+        &transaction_header_address,
+        &header_signature,
+        &request.receiver_snapshot_proof,
+    );
 
-    offer::complete_offer(&transaction_address, &attestation_address)?;
+    complete_offer_and_update_attestation(attestation)?;
 
     Ok(TransactionCompletedProof {
         transaction_header: (transaction_header, header_signature),
+        last_attestation_address,
         receiver_snapshot_proof: request.receiver_snapshot_proof,
     })
 }

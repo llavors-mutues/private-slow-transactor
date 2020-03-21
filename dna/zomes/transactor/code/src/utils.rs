@@ -69,6 +69,6 @@ pub fn get_my_last_header() -> ZomeApiResult<ChainHeader> {
 
     headers_with_entries
         .first()
-        .map(|h| h.0)
+        .map(|h| h.0.clone())
         .ok_or(ZomeApiError::from(format!("Could not find header")))
 }

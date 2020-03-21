@@ -1,9 +1,11 @@
-use crate::utils;
-use crate::utils::ParseableEntry;
-use hdk::entry_definition::ValidatingEntryType;
-use hdk::holochain_core_types::dna::entry_types::Sharing;
-use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-use hdk::{error::ZomeApiResult, holochain_persistence_api::cas::content::Address};
+use crate::{utils, utils::ParseableEntry};
+use hdk::{
+    entry_definition::ValidatingEntryType,
+    error::ZomeApiResult,
+    holochain_core_types::{chain_header::ChainHeader, dna::entry_types::Sharing},
+    holochain_json_api::{error::JsonError, json::JsonString},
+    holochain_persistence_api::cas::content::Address,
+};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Transaction {
@@ -42,9 +44,10 @@ pub fn entry_definition() -> ValidatingEntryType {
  * Returns all the transactions already completed that are present in the source chain
  */
 pub fn get_my_completed_transactions() -> ZomeApiResult<Vec<Transaction>> {
-    let transactions_entries = utils::query_all_into(String::from("transaction"))?;
+    let transactions_entries: Vec<(ChainHeader, Transaction)> =
+        utils::query_all_into(String::from("transaction"))?;
 
-    Ok(transactions_entries.iter().map(|t| t.1).collect())
+    Ok(transactions_entries.iter().map(|t| t.1.clone()).collect())
 }
 
 /**

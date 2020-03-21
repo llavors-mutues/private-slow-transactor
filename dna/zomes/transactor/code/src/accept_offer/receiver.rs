@@ -1,9 +1,12 @@
-use super::AcceptOfferRequest;
+use super::{complete_offer_and_update_attestation, AcceptOfferRequest};
 use crate::{
+    attestation,
+    attestation::Attestation,
     message::{MessageBody, OfferMessage, OfferResponse},
     offer, proof,
     proof::TransactionCompletedProof,
     transaction::Transaction,
+    utils,
     utils::ParseableEntry,
 };
 use hdk::{
@@ -64,6 +67,49 @@ pub fn complete_transaction(
     transaction: Transaction,
     proof: TransactionCompletedProof,
 ) -> ZomeApiResult<Address> {
+    validate_proof(&transaction, &proof)?;
+
+    let sender_attestation = Attestation::for_sender(
+        &transaction.sender_address.clone(),
+        &proof.last_attestation_address,
+        &transaction.address()?,
+        &proof.transaction_header.0.address(),
+        &proof.transaction_header.1,
+        &proof.receiver_snapshot_proof,
+    );
+
+    let new_sender_attestation_address =
+        hdk::update_entry(sender_attestation.entry(), &proof.last_attestation_address)?;
+    let transaction_address = hdk::commit_entry(&transaction.clone().entry())?;
+    let transaction_header = utils::get_my_last_header()?;
+
+    let transaction_header_address = transaction_header.address();
+    let header_signature = Signature::from(hdk::sign(transaction_header_address.clone())?);
+
+    let last_attestation = attestation::query_my_last_attestation()?;
+    let last_attestation_address = last_attestation.address()?;
+
+    let receiver_attestation = Attestation::for_receiver(
+        &AGENT_ADDRESS.clone(),
+        &last_attestation_address,
+        &transaction.address()?,
+        &transaction_header_address,
+        &header_signature,
+        &new_sender_attestation_address,
+    );
+
+    complete_offer_and_update_attestation(receiver_attestation)?;
+
+    Ok(transaction_address)
+}
+
+/**
+ * Validates that the response proof is valid
+ */
+fn validate_proof(
+    transaction: &Transaction,
+    proof: &TransactionCompletedProof,
+) -> ZomeApiResult<()> {
     let last_header_address =
         proof
             .transaction_header
@@ -86,9 +132,7 @@ pub fn complete_transaction(
         &proof.transaction_header.1,
     )?;
 
-    create_transaction_and_attestations(transaction)?;
-
-    offer::complete_offer(&transaction.address()?)?;
+    Ok(())
 }
 
 /**
@@ -117,13 +161,6 @@ fn validate_transaction_header(
     )?;
 
     Ok(())
-}
-
-/**
- * After validation, create the transaction entry and the attestations for both the sender and the receiver
- */
-fn create_transaction_and_attestations(transaction: Transaction) -> ZomeApiResult<Address> {
-    hdk::commit_entry(&transaction.entry())
 }
 
 /**
