@@ -1,9 +1,6 @@
 use crate::{
-    offer::Offer,
-    workflows::{
-        accept_offer, create_offer, get_sender_balance, get_sender_balance::TransactionsSnapshot,
-        TransactionCompletedProof,
-    },
+    accept_offer, create_offer, get_sender_balance, get_sender_balance::TransactionsSnapshot,
+    offer::Offer, proof::TransactionCompletedProof,
 };
 use hdk::holochain_core_types::time::Timeout;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
@@ -68,11 +65,11 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
         ))),
         Ok(message_body) => match message_body {
             MessageBody::SendOffer(Message::Request(offer)) => {
-                create_offer::receive_offer(sender_address, offer)
+                create_offer::receiver::receive_offer(sender_address, offer)
                     .map(|result| MessageBody::SendOffer(Message::Response(result)))
             }
             MessageBody::GetTransactionsSnapshot(OfferMessage::Request(offer_address)) => {
-                get_sender_balance::get_transactions_snapshot(offer_address).map(|result| {
+                get_sender_balance::sender::get_transactions_snapshot(offer_address).map(|result| {
                     MessageBody::GetTransactionsSnapshot(OfferMessage::Response(result))
                 })
             }

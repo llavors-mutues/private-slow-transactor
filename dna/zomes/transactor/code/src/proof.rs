@@ -1,15 +1,11 @@
-use crate::{attestation,attestation::TransactionRole, utils};
-use hdk::error::{ZomeApiError, ZomeApiResult};
-use hdk::holochain_core_types::{chain_header::ChainHeader, signature::Signature};
-use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-use hdk::holochain_persistence_api::cas::content::Address;
-use hdk::prelude::AddressableContent;
+use crate::{attestation, attestation::TransactionRole, utils};
+use hdk::{
+    holochain_core_types::{chain_header::ChainHeader, signature::Signature},
+    holochain_json_api::{error::JsonError, json::JsonString},
+    prelude::*,
+};
 
-pub mod accept_offer;
-pub mod create_offer;
-pub mod get_sender_balance;
-
-#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+#[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
 pub struct TransactionCompletedProof {
     transaction_header: (ChainHeader, Signature),
     receiver_transaction_snapshot_proof: Signature,
@@ -25,14 +21,15 @@ pub fn get_transaction_proof(
         .ok_or(ZomeApiError::from(format!("Invalid attestation")))?;
 
     match proof.transaction_role {
-        TransactionRole::Receiver {..} => Err(ZomeApiError::from(format!("Invalid attestation"))),
-        TransactionRole::Sender { receiver_transaction_snapshot_proof } => {
-
+        TransactionRole::Receiver { .. } => Err(ZomeApiError::from(format!("Invalid attestation"))),
+        TransactionRole::Sender {
+            receiver_transaction_snapshot_proof,
+        } => {
             let chain_header = query_header(proof.transaction_header.0)?;
 
             Ok(TransactionCompletedProof {
                 transaction_header: (chain_header, proof.transaction_header.1),
-                receiver_transaction_snapshot_proof
+                receiver_transaction_snapshot_proof,
             })
         }
     }

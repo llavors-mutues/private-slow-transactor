@@ -1,8 +1,11 @@
-use crate::offer::*;
-use crate::utils::ParseableEntry;
-use crate::{message::*, transaction::Transaction};
-use hdk::prelude::*;
-use hdk::AGENT_ADDRESS;
+use crate::{
+    message,
+    message::{Message, MessageBody},
+    offer::{Offer, OfferState},
+    transaction::Transaction,
+    utils::ParseableEntry,
+};
+use hdk::{prelude::*, AGENT_ADDRESS};
 
 /**
  * Sends an offer to the receiver address, and when Creates a private offer to the given receiver address, setting up the transaction
@@ -27,7 +30,7 @@ pub fn create_offer(
 
     let message_body = MessageBody::SendOffer(Message::Request(offer.clone()));
 
-    let result = send_message(receiver_address, message_body)?;
+    let result = message::send_message(receiver_address, message_body)?;
 
     match result {
         MessageBody::SendOffer(Message::Response(())) => hdk::commit_entry(&offer.entry()),
@@ -36,26 +39,4 @@ pub fn create_offer(
             result
         ))),
     }
-}
-
-/**
- * Receive and offer, check that it's valid, and store it privately
- */
-pub fn receive_offer(sender_address: Address, offer: Offer) -> ZomeApiResult<()> {
-    if sender_address != offer.transaction.sender_address {
-        return Err(ZomeApiError::from(format!(
-            "This offer is not from the agent that sent the message"
-        )));
-    }
-
-    if offer.transaction.receiver_address != AGENT_ADDRESS.clone() {
-        return Err(ZomeApiError::from(format!("This offer is not for me")));
-    }
-    match offer.state {
-        OfferState::Pending => Ok(()),
-        _ => Err(ZomeApiError::from(format!("The offer must be pending"))),
-    }?;
-
-    hdk::commit_entry(&offer.entry())?;
-    Ok(())
 }

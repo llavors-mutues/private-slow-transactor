@@ -9,11 +9,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
 
-use hdk::{entry_definition::ValidatingEntryType, error::ZomeApiResult};
-
-use hdk::holochain_json_api::json::JsonString;
-
-use hdk::holochain_persistence_api::cas::content::Address;
+use hdk::prelude::*;
 
 use hdk_proc_macros::zome;
 
@@ -22,11 +18,14 @@ use entries::attestation;
 use entries::offer;
 use entries::transaction;
 
-pub mod utils;
+pub mod accept_offer;
+pub mod create_offer;
+pub mod get_sender_balance;
 pub mod message;
-pub mod workflows;
+pub mod proof;
+pub mod utils;
 
-use workflows::get_sender_balance::BalanceSnapshot;
+use get_sender_balance::BalanceSnapshot;
 
 #[zome]
 mod transactor {
@@ -62,12 +61,12 @@ mod transactor {
         amount: f64,
         timestamp: usize,
     ) -> ZomeApiResult<Address> {
-        workflows::create_offer::create_offer(receiver_address, amount, timestamp)
+        create_offer::sender::create_offer(receiver_address, amount, timestamp)
     }
 
     #[zome_fn("hc_public")]
     pub fn get_sender_balance(transaction_address: Address) -> ZomeApiResult<BalanceSnapshot> {
-        workflows::get_sender_balance::get_sender_balance(transaction_address)
+        get_sender_balance::receiver::get_sender_balance(transaction_address)
     }
 
     #[zome_fn("hc_public")]
@@ -75,7 +74,7 @@ mod transactor {
         offer_address: Address,
         last_header_address: Address,
     ) -> ZomeApiResult<Address> {
-        workflows::accept_offer::accept_offer(offer_address, last_header_address)
+        accept_offer::receiver::accept_offer(offer_address, last_header_address)
     }
 
     #[zome_fn("hc_public")]
