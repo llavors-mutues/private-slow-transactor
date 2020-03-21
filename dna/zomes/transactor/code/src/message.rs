@@ -1,10 +1,11 @@
 use crate::{
     offer::Offer,
     workflows::{
-        accept_offer, create_offer, get_offer_balance, get_offer_balance::TransactionsSnapshot,
+        accept_offer, create_offer, get_sender_balance, get_sender_balance::TransactionsSnapshot,
+        TransactionCompletedProof,
     },
 };
-use hdk::holochain_core_types::{chain_header::ChainHeader, signature::Signature, time::Timeout};
+use hdk::holochain_core_types::time::Timeout;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::prelude::*;
 use std::convert::TryInto;
@@ -20,14 +21,15 @@ pub type OfferMessage<Req, Res> = Message<Req, OfferResponse<Res>>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum OfferResponse<Res> {
     OfferPending(Res),
-    OfferNotPending,
+    OfferCompleted(TransactionCompletedProof),
+    OfferCanceled,
 }
 
 #[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
 pub enum MessageBody {
     SendOffer(Message<Offer, ()>),
-    GetTransactions(OfferMessage<Address, TransactionsSnapshot>),
-    AcceptOffer(OfferMessage<accept_offer::AcceptOfferRequest, (ChainHeader, Signature)>),
+    GetTransactionsSnapshot(OfferMessage<Address, TransactionsSnapshot>),
+    AcceptOffer(OfferMessage<accept_offer::AcceptOfferRequest, ()>),
 }
 
 /**
@@ -69,9 +71,10 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
                 create_offer::receive_offer(sender_address, offer)
                     .map(|result| MessageBody::SendOffer(Message::Response(result)))
             }
-            MessageBody::GetTransactions(OfferMessage::Request(offer_address)) => {
-                get_offer_balance::get_my_transactions_snapshot_for_offer(offer_address)
-                    .map(|result| MessageBody::GetTransactions(OfferMessage::Response(result)))
+            MessageBody::GetTransactionsSnapshot(OfferMessage::Request(offer_address)) => {
+                get_sender_balance::get_transactions_snapshot(offer_address).map(|result| {
+                    MessageBody::GetTransactionsSnapshot(OfferMessage::Response(result))
+                })
             }
             _ => Err(ZomeApiError::from(format!("Bad message type"))),
         },

@@ -1,13 +1,9 @@
+use crate::utils;
+use crate::utils::ParseableEntry;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::dna::entry_types::Sharing;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-use hdk::{
-    error::{ZomeApiError, ZomeApiResult},
-    holochain_core_types::entry::Entry,
-    holochain_persistence_api::cas::content::Address,
-};
-use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, QueryResult};
-use std::convert::TryFrom;
+use hdk::{error::ZomeApiResult, holochain_persistence_api::cas::content::Address};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Transaction {
@@ -17,29 +13,9 @@ pub struct Transaction {
     pub amount: f64,
 }
 
-impl Transaction {
-    pub fn from_entry(entry: &Entry) -> Option<Transaction> {
-        match entry {
-            Entry::App(entry_type, transaction_entry) => {
-                if entry_type.to_string() != "transaction" {
-                    return None;
-                }
-
-                match Transaction::try_from(transaction_entry) {
-                    Ok(t) => Some(t),
-                    _ => None,
-                }
-            }
-            _ => None,
-        }
-    }
-
-    pub fn entry(&self) -> Entry {
-        Entry::App("transaction".into(), self.clone().into())
-    }
-
-    pub fn address(&self) -> ZomeApiResult<Address> {
-        hdk::entry_address(&self.entry())
+impl ParseableEntry for Transaction {
+    fn entry_type() -> String {
+        String::from("transaction")
     }
 }
 
@@ -65,24 +41,10 @@ pub fn entry_definition() -> ValidatingEntryType {
 /**
  * Returns all the transactions already completed that are present in the source chain
  */
-pub fn get_all_my_transactions() -> ZomeApiResult<Vec<Transaction>> {
-    let options = QueryArgsOptions {
-        start: 0,
-        limit: 0,
-        entries: true,
-        headers: false,
-    };
-    let query_result = hdk::query_result(QueryArgsNames::from("transaction"), options)?;
+pub fn get_my_completed_transactions() -> ZomeApiResult<Vec<Transaction>> {
+    let transactions_entries = utils::query_all_into(String::from("transaction"))?;
 
-    match query_result {
-        QueryResult::Entries(entries) => Ok(entries
-            .iter()
-            .filter_map(|entry| Transaction::from_entry(&entry.1))
-            .collect()),
-        _ => Err(ZomeApiError::from(format!(
-            "Error getting own transactions"
-        ))),
-    }
+    Ok(transactions_entries.iter().map(|t| t.1).collect())
 }
 
 /**
@@ -120,28 +82,3 @@ pub fn are_transactions_valid(
 
     Ok(true)
 }
-
-/**
- * Returns Ok(()) only if both vector of addresses is identical
- */
-pub fn validate_transactions_against_attestations(
-    attestation_transaction_addresses: &Vec<Address>,
-    source_chain_addresses: &Vec<Address>,
-) -> ZomeApiResult<()> {
-    if attestation_transaction_addresses.len() != source_chain_addresses.len() {
-        return Err(ZomeApiError::from(String::from(
-            "Chain entries received from the sender do not match the attestation entries",
-        )));
-    }
-
-    for i in 0..source_chain_addresses.len() {
-        if attestation_transaction_addresses.get(i) != source_chain_addresses.get(i) {
-            return Err(ZomeApiError::from(String::from(
-                "Chain entries received from the sender do not match the attestation entries",
-            )));
-        }
-    }
-
-    Ok(())
-}
-

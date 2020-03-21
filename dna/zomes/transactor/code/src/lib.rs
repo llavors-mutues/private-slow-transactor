@@ -9,9 +9,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
 
-use hdk::{
-    entry_definition::ValidatingEntryType, error::ZomeApiResult, holochain_core_types::entry::Entry,
-};
+use hdk::{entry_definition::ValidatingEntryType, error::ZomeApiResult};
 
 use hdk::holochain_json_api::json::JsonString;
 
@@ -20,14 +18,15 @@ use hdk::holochain_persistence_api::cas::content::Address;
 use hdk_proc_macros::zome;
 
 pub mod entries;
-use entries::transaction;
 use entries::attestation;
 use entries::offer;
+use entries::transaction;
 
-pub mod workflows;
+pub mod utils;
 pub mod message;
+pub mod workflows;
 
-use workflows::get_offer_balance::OfferBalance;
+use workflows::get_sender_balance::BalanceSnapshot;
 
 #[zome]
 mod transactor {
@@ -58,23 +57,30 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn offer_credits(receiver_address: Address, amount: f64) -> ZomeApiResult<Address> {
-        workflows::create_offer::create_offer(receiver_address, amount)
+    pub fn offer_credits(
+        receiver_address: Address,
+        amount: f64,
+        timestamp: usize,
+    ) -> ZomeApiResult<Address> {
+        workflows::create_offer::create_offer(receiver_address, amount, timestamp)
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_offer_balance(offer_address: Address) -> ZomeApiResult<OfferBalance> {
-        workflows::get_offer_balance::get_offer_balance(offer_address)
-    }
-    
-    #[zome_fn("hc_public")]
-    pub fn accept_offer(offer_address: Address, last_header_address: Address, timestamp: usize) -> ZomeApiResult<Address> {
-        workflows::accept_offer::accept_offer(offer_address, last_header_address, timestamp)
+    pub fn get_sender_balance(transaction_address: Address) -> ZomeApiResult<BalanceSnapshot> {
+        workflows::get_sender_balance::get_sender_balance(transaction_address)
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_my_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
-        transaction::get_all_my_transactions()
+    pub fn accept_offer(
+        offer_address: Address,
+        last_header_address: Address,
+    ) -> ZomeApiResult<Address> {
+        workflows::accept_offer::accept_offer(offer_address, last_header_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn get_completed_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
+        transaction::get_my_completed_transactions()
     }
 
     #[receive]

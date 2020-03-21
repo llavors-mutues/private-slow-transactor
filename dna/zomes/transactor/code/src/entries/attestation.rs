@@ -1,26 +1,37 @@
+use crate::utils;
+use crate::utils::ParseableEntry;
+use super::transaction::Transaction;
 use hdk::entry_definition::ValidatingEntryType;
-use hdk::holochain_core_types::signature::Signature;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
 use hdk::ValidationData;
 use hdk::{
-    error::ZomeApiResult, holochain_core_types::dna::entry_types::Sharing,
-    holochain_core_types::entry::Entry, AGENT_ADDRESS,
+    error::{ZomeApiError, ZomeApiResult},
+    holochain_core_types::{dna::entry_types::Sharing, signature::Signature},
+    AGENT_ADDRESS,
 };
 
-use std::convert::TryFrom;
+#[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
+pub enum TransactionRole {
+    Sender {
+        receiver_transaction_snapshot_proof: Signature, // Signature of 'transaction_address,last_header_address' by the receiver
+    },
+    Receiver {
+        sender_attestation_address: Address, // Address of the sender's attestation
+    },
+}
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-pub struct TransactionProof {
+pub struct AttestationProof {
     pub transaction_address: Address,
-    pub agent_header: (Address, Signature),
-    pub couterparty_header: (Address, Signature),
+    pub transaction_header: (Address, Signature),
+    pub transaction_role: TransactionRole,
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Attestation {
     pub agent_address: Address,
-    pub transaction_proof: Option<TransactionProof>,
+    pub transaction_proof: Option<AttestationProof>,
 }
 
 impl Attestation {
@@ -37,20 +48,11 @@ impl Attestation {
             agent_address: agent_address.clone(),
         }
     }
+}
 
-    pub fn entry(self) -> Entry {
-        Entry::App("attestation".into(), self.into())
-    }
-
-    pub fn from_entry(entry: &Entry) -> Option<Attestation> {
-        if let Entry::App(entry_type, attestation_entry) = entry {
-            if entry_type.to_string() == "attestation" {
-                if let Ok(t) = Attestation::try_from(attestation_entry) {
-                    return Some(t);
-                }
-            }
-        }
-        None
+impl utils::ParseableEntry for Attestation {
+    fn entry_type() -> String {
+        String::from("attestation")
     }
 }
 
@@ -111,23 +113,9 @@ pub fn validate_attestation(
 }
 
 /**
- * Gets all the transactions addresses for the given agent from the DHT
- */
-pub fn get_agent_transaction_addresses_from_dht(
-    agent_address: &Address,
-) -> ZomeApiResult<Vec<Address>> {
-    let attestations = get_all_attestations(agent_address)?;
-
-    Ok(attestations
-        .iter()
-        .filter_map(|attestation| attestation.clone().transaction_proof.map(|proof| proof.transaction_address))
-        .collect())
-}
-
-/**
  * Gets all attestations from the DHT for the given agent
  */
-pub fn get_all_attestations(agent_address: &Address) -> ZomeApiResult<Vec<Attestation>> {
+pub fn get_attestations_for_agent(agent_address: &Address) -> ZomeApiResult<Vec<Attestation>> {
     let attestation = Attestation::initial(agent_address);
 
     let initial_address = hdk::entry_address(&attestation.entry())?;
@@ -150,4 +138,76 @@ pub fn get_all_attestations(agent_address: &Address) -> ZomeApiResult<Vec<Attest
             Ok(attestations)
         }
     }
+}
+
+/**
+ * Gets the attestation identified with the given address from the private chain
+ */
+pub fn query_attestation(attestation_address: &Address) -> ZomeApiResult<Attestation> {
+    let attestations = utils::query_all_into(String::from("attestation"))?;
+
+    attestations
+        .iter()
+        .find(|attestation| attestation.0.entry_address() == attestation_address)
+        .map(|a| a.1)
+        .ok_or(ZomeApiError::from(format!(
+            "Could not find attestation {}",
+            attestation_address
+        )))
+}
+
+/**
+ * Validates the given list of transactions for one agent with the given list of attestations for the same agent
+ */
+pub fn validate_transactions_against_attestations(
+    attestations: &Vec<Attestation>,
+    transactions: &Vec<Transaction>,
+) -> ZomeApiResult<()> {
+    if attestations.len() != transactions.len() {
+        return Err(ZomeApiError::from(String::from(
+            "Chain entries received from the sender do not match the attestation entries",
+        )));
+    }
+
+    for (attestation, transaction) in attestations.iter().zip(transactions.iter()) {
+        validate_transaction_against_attestation(attestation, transaction)?;
+    }
+
+    Ok(())
+}
+
+/**
+ * Validates a single transaction for one agent with the attestation from the same agent
+ */
+fn validate_transaction_against_attestation(
+    attestation: &Attestation,
+    transaction: &Transaction,
+) -> ZomeApiResult<()> {
+    let transaction_proof = attestation
+        .transaction_proof
+        .ok_or(ZomeApiError::from(format!(
+            "Attestation does not contain transaction proof"
+        )))?;
+    let transaction_address = transaction.address()?;
+
+    if transaction_proof.transaction_address != transaction_address {
+        return Err(ZomeApiError::from(format!(
+            "Transaction addresses do not match"
+        )));
+    }
+
+    let role_valid = match transaction_proof.transaction_role {
+        TransactionRole::Sender {
+            receiver_transaction_snapshot_proof,
+        } => transaction.sender_address == attestation.agent_address,
+        TransactionRole::Receiver { .. } => {
+            transaction.receiver_address == attestation.agent_address
+        }
+    };
+
+    if !role_valid {
+        return Err(ZomeApiError::from(format!("Role proof not valid")));
+    }
+
+    Ok(())
 }

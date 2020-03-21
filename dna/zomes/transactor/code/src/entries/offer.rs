@@ -1,57 +1,31 @@
+use crate::utils;
+use crate::utils::ParseableEntry;
 use crate::transaction::Transaction;
 use hdk::entry_definition::ValidatingEntryType;
+use hdk::holochain_core_types::chain_header::ChainHeader;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::dna::entry_types::Sharing,
-    holochain_core_types::entry::Entry,
 };
-use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, QueryResult};
-use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub enum OfferState {
     Pending,
     Canceled,
-    Completed,
+    Completed { attestation_address: Address },
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Offer {
-    pub sender_address: Address,
-    pub receiver_address: Address,
-    pub amount: f64,
+    pub transaction: Transaction,
     pub state: OfferState,
 }
 
-impl Offer {
-    pub fn entry(self) -> Entry {
-        Entry::App("offer".into(), self.into())
-    }
-
-    pub fn from_entry(entry: &Entry) -> Option<Offer> {
-        if let Entry::App(entry_type, attestation_entry) = entry {
-            if entry_type.to_string() == "offer" {
-                if let Ok(t) = Offer::try_from(attestation_entry) {
-                    return Some(t);
-                }
-            }
-        }
-        None
-    }
-
-    pub fn to_hypotetical_transaction(&self) -> Transaction {
-        self.to_transaction(0)
-    }
-
-    pub fn to_transaction(&self, timestamp: usize) -> Transaction {
-        Transaction {
-            sender_address: self.sender_address.clone(),
-            receiver_address: self.receiver_address.clone(),
-            amount: self.amount.clone(),
-            timestamp,
-        }
+impl ParseableEntry for Offer {
+    fn entry_type() -> String {
+        String::from("offer")
     }
 }
 
@@ -70,64 +44,56 @@ pub fn entry_definition() -> ValidatingEntryType {
 }
 
 /**
- * Retrieve all offers from the private chain
+ * Gets the last offer identified with the given address from the private chain
  */
-pub fn get_all_offers() -> ZomeApiResult<Vec<(Address, Offer)>> {
-    let options = QueryArgsOptions {
-        start: 0,
-        limit: 0,
-        headers: false,
-        entries: true,
-    };
-    let query_result = hdk::query_result(QueryArgsNames::from(vec!["offer"]), options)?;
+pub fn query_offer(transaction_address: &Address) -> ZomeApiResult<Offer> {
+    let offers: Vec<(ChainHeader, Offer)> = utils::query_all_into(String::from("offers"))?;
 
-    match query_result {
-        QueryResult::Entries(entries) => {
-            let entry_to_offer =
-                |entry: (Address, Entry)| Offer::from_entry(&entry.1).map(|offer| (entry.0, offer));
-            let offers = entries.into_iter().filter_map(entry_to_offer).collect();
-            Ok(offers)
+    let maybe_offer = offers.iter().map(|next_offer| next_offer.1).find(|offer| {
+        match offer.transaction.address() {
+            Ok(address) => address == transaction_address.clone(),
+            Err(_) => false,
         }
-        _ => Err(ZomeApiError::from(format!("Unable to get offers"))),
-    }
-}
+    });
 
-/**
- * Gets the offer identified with the given address from the private chain
- */
-pub fn get_offer(offer_address: &Address) -> ZomeApiResult<Offer> {
-    let offers = get_all_offers()?;
-
-    let maybe_offer = offers.iter().find(|offer| offer.0 == offer_address.clone());
-
-    maybe_offer
-        .map(|offer| offer.1.clone())
-        .ok_or(ZomeApiError::from(format!("Given offer was not found")))
+    maybe_offer.ok_or(ZomeApiError::from(format!(
+        "Could not find offer for transaction address {}",
+        transaction_address
+    )))
 }
 
 /**
  * Updates the private offer to a canceled state
  */
-pub fn cancel_offer(offer_address: &Address) -> ZomeApiResult<()> {
-    update_offer_state(offer_address, OfferState::Canceled)
+pub fn cancel_offer(transaction_address: &Address) -> ZomeApiResult<()> {
+    update_offer_state(transaction_address, OfferState::Canceled)
 }
 
 /**
  * Updates the private offer to a completed state
  */
-pub fn complete_offer(offer_address: &Address) -> ZomeApiResult<()> {
-    update_offer_state(offer_address, OfferState::Completed)
+pub fn complete_offer(
+    transaction_address: &Address,
+    attestation_address: &Address,
+) -> ZomeApiResult<()> {
+    update_offer_state(
+        transaction_address,
+        OfferState::Completed {
+            attestation_address: attestation_address.clone(),
+        },
+    )
 }
 
 /**
  * Updates the private offer to the given offer state
  */
-fn update_offer_state(offer_address: &Address, offer_state: OfferState) -> ZomeApiResult<()> {
-    let mut offer = get_offer(offer_address)?;
+fn update_offer_state(transaction_address: &Address, offer_state: OfferState) -> ZomeApiResult<()> {
+    let mut offer = query_offer(transaction_address)?;
 
+    let current_address = offer.address()?;
     offer.state = offer_state;
 
-    hdk::update_entry(offer.entry(), offer_address)?;
+    hdk::update_entry(offer.entry(), &current_address)?;
 
     Ok(())
 }
