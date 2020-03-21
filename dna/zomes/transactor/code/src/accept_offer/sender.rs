@@ -50,6 +50,8 @@ pub fn create_transaction_and_attestation(
         &request.receiver_snapshot_proof,
     );
 
+    attestation::create_initial_attestation()?;
+
     complete_offer_and_update_attestation(attestation)?;
 
     Ok(TransactionCompletedProof {

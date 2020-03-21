@@ -24,7 +24,7 @@ pub fn create_offer(
     };
 
     let offer = Offer {
-        transaction,
+        transaction: transaction.clone(),
         state: OfferState::Pending,
     };
 
@@ -33,7 +33,10 @@ pub fn create_offer(
     let result = message::send_message(receiver_address, message_body)?;
 
     match result {
-        MessageBody::SendOffer(Message::Response(())) => hdk::commit_entry(&offer.entry()),
+        MessageBody::SendOffer(Message::Response(())) => {
+            hdk::commit_entry(&offer.entry())?;
+            Ok(transaction.address()?)
+        }
         _ => Err(ZomeApiError::from(format!(
             "Received error when offering credits, {:?}",
             result

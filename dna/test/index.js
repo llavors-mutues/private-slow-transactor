@@ -38,12 +38,27 @@ const orchestrator = new Orchestrator({
   }
 });
 
-function sendAmount(to, amount) {
+function offerCredits(to, credits) {
   return caller =>
-    caller.call("transactor", "transactor", "send_amount", {
+    caller.call("transactor", "transactor", "offer_credits", {
       receiver_address: to,
-      amount,
+      amount: credits,
       timestamp: Math.floor(Date.now() / 1000)
+    });
+}
+
+function getSenderBalance(transactionAddress) {
+  return caller =>
+    caller.call("transactor", "transactor", "get_sender_balance", {
+      transaction_address: transactionAddress
+    });
+}
+
+function acceptOffer(transactionAddress, lastHeaderAddress) {
+  return caller =>
+    caller.call("transactor", "transactor", "accept_offer", {
+      transaction_address: transactionAddress,
+      last_header_address: lastHeaderAddress
     });
 }
 
@@ -56,29 +71,32 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   const aliceAddress = alice.instance("transactor").agentAddress;
   const bobAddress = bob.instance("transactor").agentAddress;
 
-  let result = await sendAmount(bobAddress, 10)(alice);   // Alice has -10, Bob has +10
+  let result = await offerCredits(bobAddress, 10)(alice);
   await s.consistency();
   t.ok(result.Ok);
 
-  result = await sendAmount(bobAddress, 10)(alice);       // Alice has -20, Bob has +20
+  let transactionAddress = result.Ok;
+
+  result = await getSenderBalance(result.Ok)(alice);
+  t.equal(result.Ok.sender_balance, 0);
+  t.equal(result.Ok.executable, true);
+
+  result = await acceptOffer(
+    transactionAddress,
+    result.Ok.last_header_address
+  )(alice); // Alice has -10, Bob has +10
   await s.consistency();
   t.ok(result.Ok);
 
-  result = await sendAmount(aliceAddress, 10)(bob);       // Alice has -10, Bob has +10
+  result = await offerCredits(bobAddress, 10)(alice);
   await s.consistency();
   t.ok(result.Ok);
 
-  result = await sendAmount(bobAddress, 91)(alice);       // Alice would have -101, not valid!
-  await s.consistency();
-  t.notOk(result.Ok);
+  transactionAddress = result.Ok;
 
-  result = await sendAmount(aliceAddress, 115)(bob);       // Bob would have -105, not valid!
-  await s.consistency();
-  t.notOk(result.Ok);
-
-  result = await sendAmount(bobAddress, 90)(alice);       // Alice has -100, Bob has +100
-  await s.consistency();
-  t.ok(result.Ok);
+  result = await getSenderBalance(result.Ok)(alice);
+  t.equal(result.Ok.sender_balance, -10);
+  t.equal(result.Ok.executable, true);
 });
 
 orchestrator.run();

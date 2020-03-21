@@ -197,7 +197,7 @@ pub fn get_attestations_for_agent(agent_address: &Address) -> ZomeApiResult<Vec<
  */
 pub fn query_my_last_attestation() -> ZomeApiResult<Attestation> {
     let attestations: Vec<(ChainHeader, Attestation)> =
-        utils::query_all_into(String::from("attestation"))?;
+        utils::query_all_into()?;
 
     match attestations.first() {
         Some(attestation) => Ok(attestation.1.clone()),
@@ -212,7 +212,7 @@ pub fn query_my_last_attestation() -> ZomeApiResult<Attestation> {
  */
 pub fn query_attestation(attestation_address: &Address) -> ZomeApiResult<Attestation> {
     let attestations: Vec<(ChainHeader, Attestation)> =
-        utils::query_all_into(String::from("attestation"))?;
+        utils::query_all_into()?;
 
     attestations
         .iter()

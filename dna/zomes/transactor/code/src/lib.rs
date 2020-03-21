@@ -71,10 +71,10 @@ mod transactor {
 
     #[zome_fn("hc_public")]
     pub fn accept_offer(
-        offer_address: Address,
+        transaction_address: Address,
         last_header_address: Address,
     ) -> ZomeApiResult<Address> {
-        accept_offer::receiver::accept_offer(offer_address, last_header_address)
+        accept_offer::receiver::accept_offer(transaction_address, last_header_address)
     }
 
     #[zome_fn("hc_public")]

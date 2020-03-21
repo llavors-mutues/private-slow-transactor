@@ -1,6 +1,6 @@
+use crate::transaction::Transaction;
 use crate::utils;
 use crate::utils::ParseableEntry;
-use crate::transaction::Transaction;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::chain_header::ChainHeader;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
@@ -47,14 +47,16 @@ pub fn entry_definition() -> ValidatingEntryType {
  * Gets the last offer identified with the given address from the private chain
  */
 pub fn query_offer(transaction_address: &Address) -> ZomeApiResult<Offer> {
-    let offers: Vec<(ChainHeader, Offer)> = utils::query_all_into(String::from("offers"))?;
+    let offers: Vec<(ChainHeader, Offer)> = utils::query_all_into()?;
 
-    let maybe_offer = offers.iter().map(|next_offer| next_offer.1.clone()).find(|offer| {
-        match offer.transaction.address() {
-            Ok(address) => address == transaction_address.clone(),
-            Err(_) => false,
-        }
-    });
+    let maybe_offer =
+        offers
+            .iter()
+            .map(|next_offer| next_offer.1.clone())
+            .find(|offer| match offer.transaction.address() {
+                Ok(address) => address == transaction_address.clone(),
+                Err(_) => false,
+            });
 
     maybe_offer.ok_or(ZomeApiError::from(format!(
         "Could not find offer for transaction address {}",

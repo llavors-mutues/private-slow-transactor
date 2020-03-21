@@ -47,11 +47,11 @@ pub fn query_all(entry_type: String) -> ZomeApiResult<Vec<(ChainHeader, Entry)>>
 /**
  * Retrieve all entries of the given type from the private chain and transform them into the given struct
  */
-pub fn query_all_into<T>(entry_type: String) -> ZomeApiResult<Vec<(ChainHeader, T)>>
+pub fn query_all_into<T>() -> ZomeApiResult<Vec<(ChainHeader, T)>>
 where
     T: ParseableEntry,
 {
-    let headers_with_entries = query_all(entry_type)?;
+    let headers_with_entries = query_all(T::entry_type())?;
     let entry_to_parsed =
         |entry: (ChainHeader, Entry)| T::from_entry(&entry.1).map(|parsed| (entry.0, parsed));
 
