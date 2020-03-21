@@ -3,7 +3,7 @@ use hdk::{holochain_core_types::chain_header::ChainHeader, prelude::*};
 use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, QueryResult};
 use std::convert::TryFrom;
 
-pub trait ParseableEntry: TryFrom<JsonString> + Into<JsonString> {
+pub trait ParseableEntry: TryFrom<JsonString> + Into<JsonString> + Clone {
     fn from_entry(entry: &Entry) -> Option<Self> {
         if let Entry::App(entry_type, attestation_entry) = entry {
             if entry_type.to_string() == Self::entry_type() {
@@ -22,7 +22,7 @@ pub trait ParseableEntry: TryFrom<JsonString> + Into<JsonString> {
     fn entry_type() -> String;
 
     fn address(&self) -> ZomeApiResult<Address> {
-        hdk::entry_address(&self.entry())
+        hdk::entry_address(&self.clone().entry())
     }
 }
 
