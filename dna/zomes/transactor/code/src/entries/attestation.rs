@@ -196,23 +196,22 @@ pub fn get_attestations_for_agent(agent_address: &Address) -> ZomeApiResult<Vec<
  * Gets the last attestation that this agent has committed from the private chain
  */
 pub fn query_my_last_attestation() -> ZomeApiResult<Attestation> {
-    let attestations: Vec<(ChainHeader, Attestation)> =
-        utils::query_all_into()?;
+    let attestations: Vec<(ChainHeader, Attestation)> = utils::query_all_into()?;
 
-    match attestations.first() {
-        Some(attestation) => Ok(attestation.1.clone()),
-        None => Err(ZomeApiError::from(format!(
+    attestations
+        .iter()
+        .find(|attestation| attestation.1.agent_address == AGENT_ADDRESS.clone())
+        .map(|a| a.1.clone())
+        .ok_or(ZomeApiError::from(format!(
             "Could not find last attestation"
-        ))),
-    }
+        )))
 }
 
 /**
  * Gets the attestation identified with the given address from the private chain
  */
 pub fn query_attestation(attestation_address: &Address) -> ZomeApiResult<Attestation> {
-    let attestations: Vec<(ChainHeader, Attestation)> =
-        utils::query_all_into()?;
+    let attestations: Vec<(ChainHeader, Attestation)> = utils::query_all_into()?;
 
     attestations
         .iter()
@@ -228,9 +227,19 @@ pub fn query_attestation(attestation_address: &Address) -> ZomeApiResult<Attesta
  * Validates the given list of transactions for one agent with the given list of attestations for the same agent
  */
 pub fn validate_transactions_against_attestations(
-    attestations: &Vec<Attestation>,
+    attestations: &mut Vec<Attestation>,
     transactions: &Vec<Transaction>,
 ) -> ZomeApiResult<()> {
+    if attestations.len() == 0 && transactions.len() == 0 {
+        return Ok(());
+    }
+
+    let attestation = attestations.remove(0);
+
+    if let Some(_) = attestation.transaction_proof {
+        return Err(ZomeApiError::from(format!("Bad first attestation")));
+    }
+
     if attestations.len() != transactions.len() {
         return Err(ZomeApiError::from(String::from(
             "Chain entries received from the sender do not match the attestation entries",

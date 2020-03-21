@@ -84,9 +84,9 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   result = await acceptOffer(
     transactionAddress,
     result.Ok.last_header_address
-  )(alice); // Alice has -10, Bob has +10
+  )(bob); // Alice has -10, Bob has +10
   await s.consistency();
-  t.ok(result.Ok);
+  t.ok(result);
 
   result = await offerCredits(bobAddress, 10)(alice);
   await s.consistency();
@@ -94,8 +94,19 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
 
   transactionAddress = result.Ok;
 
-  result = await getSenderBalance(result.Ok)(alice);
+  result = await getSenderBalance(result.Ok)(bob);
   t.equal(result.Ok.sender_balance, -10);
+  t.equal(result.Ok.executable, true);
+
+
+  result = await offerCredits(aliceAddress, 10)(bob);
+  await s.consistency();
+  t.ok(result.Ok);
+
+  transactionAddress = result.Ok;
+
+  result = await getSenderBalance(result.Ok)(bob);
+  t.equal(result.Ok.sender_balance, 10);
   t.equal(result.Ok.executable, true);
 });
 

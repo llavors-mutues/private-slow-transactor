@@ -8,9 +8,15 @@ use hdk::{holochain_core_types::signature::Signature, prelude::*, AGENT_ADDRESS}
 /**
  * Process accept offer request, creating the transaction, updating the offer and updating the attestation
  */
-pub fn receive_accept_offer(request: AcceptOfferRequest) -> ZomeApiResult<OfferResponse<()>> {
+pub fn receive_accept_offer(sender_address: Address, request: AcceptOfferRequest) -> ZomeApiResult<OfferResponse<()>> {
     let transaction_address = request.transaction_address.clone();
     let offer = offer::query_offer(&transaction_address)?;
+
+    if offer.transaction.receiver_address != sender_address {
+        return Err(ZomeApiError::from(format!(
+            "The sender of the message is not the receiver of the transaction"
+        )));
+    }
 
     match offer.state {
         OfferState::Pending => create_transaction_and_attestation(offer.transaction, request)
@@ -37,6 +43,8 @@ pub fn create_transaction_and_attestation(
 
     let transaction_header_address = transaction_header.address();
 
+    attestation::create_initial_attestation()?;
+
     let header_signature = Signature::from(hdk::sign(transaction_header_address.clone())?);
     let last_attestation = attestation::query_my_last_attestation()?;
     let last_attestation_address = last_attestation.address()?;
@@ -49,8 +57,6 @@ pub fn create_transaction_and_attestation(
         &header_signature,
         &request.receiver_snapshot_proof,
     );
-
-    attestation::create_initial_attestation()?;
 
     complete_offer_and_update_attestation(attestation)?;
 

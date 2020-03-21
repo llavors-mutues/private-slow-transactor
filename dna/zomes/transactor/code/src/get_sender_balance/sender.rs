@@ -8,9 +8,16 @@ use hdk::{prelude::*, AGENT_ADDRESS};
  * Get the transaction snapshot if the offer is still pending
  */
 pub fn get_transactions_snapshot(
+    sender_address: Address,
     transaction_address: Address,
 ) -> ZomeApiResult<OfferResponse<TransactionsSnapshot>> {
     let offer = offer::query_offer(&transaction_address)?;
+
+    if offer.transaction.receiver_address != sender_address {
+        return Err(ZomeApiError::from(format!(
+            "The sender of the message is not the receiver of the transaction"
+        )));
+    }
 
     if offer.transaction.sender_address != AGENT_ADDRESS.clone() {
         return Err(ZomeApiError::from(format!(

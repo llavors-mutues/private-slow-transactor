@@ -70,6 +70,8 @@ pub fn complete_transaction(
     proof: TransactionCompletedProof,
 ) -> ZomeApiResult<Address> {
     validate_proof(&transaction, &proof)?;
+    
+    attestation::create_initial_attestation()?;
 
     let sender_attestation = Attestation::for_sender(
         &transaction.sender_address.clone(),
@@ -174,5 +176,13 @@ fn create_snapshot_proof(
 ) -> ZomeApiResult<Signature> {
     let preimage = proof::snapshot_proof_preimage(transaction_address, last_header_address);
     let signature = hdk::sign(preimage)?;
+
+    hdk::debug(format!(
+        "hohoho1 {} {} {} {:?}",
+        AGENT_ADDRESS.clone(),
+        transaction_address,
+        last_header_address,
+        signature
+    ))?;
     Ok(Signature::from(signature))
 }

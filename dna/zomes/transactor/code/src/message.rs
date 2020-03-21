@@ -69,12 +69,13 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
                     .map(|result| MessageBody::SendOffer(Message::Response(result)))
             }
             MessageBody::GetTransactionsSnapshot(OfferMessage::Request(offer_address)) => {
-                get_sender_balance::sender::get_transactions_snapshot(offer_address).map(|result| {
-                    MessageBody::GetTransactionsSnapshot(OfferMessage::Response(result))
-                })
+                get_sender_balance::sender::get_transactions_snapshot(sender_address, offer_address)
+                    .map(|result| {
+                        MessageBody::GetTransactionsSnapshot(OfferMessage::Response(result))
+                    })
             }
             MessageBody::AcceptOffer(OfferMessage::Request(request)) => {
-                accept_offer::sender::receive_accept_offer(request)
+                accept_offer::sender::receive_accept_offer(sender_address, request)
                     .map(|result| MessageBody::AcceptOffer(OfferMessage::Response(result)))
             }
             _ => Err(ZomeApiError::from(format!("Bad message type"))),

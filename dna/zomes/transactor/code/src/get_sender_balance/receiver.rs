@@ -103,10 +103,10 @@ fn validate_snapshot_is_valid(
     transaction_snapshot: &TransactionsSnapshot,
 ) -> ZomeApiResult<()> {
     // Get transaction addresses for the agent
-    let attestations = attestation::get_attestations_for_agent(&agent_address)?;
+    let mut attestations = attestation::get_attestations_for_agent(&agent_address)?;
 
     attestation::validate_transactions_against_attestations(
-        &attestations,
+        &mut attestations,
         &transaction_snapshot.transactions,
     )
 }

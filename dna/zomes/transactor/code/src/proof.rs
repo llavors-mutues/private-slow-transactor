@@ -77,6 +77,8 @@ pub fn validate_snapshot_proof(
     last_header_address: &Address,
     snapshot_proof: &Signature,
 ) -> ZomeApiResult<()> {
+    hdk::debug(format!("hohoho {} {} {} {:?}", receiver_address, transaction_address, last_header_address, snapshot_proof))?;
+
     let preimage = proof::snapshot_proof_preimage(transaction_address, last_header_address);
 
     let provenance = Provenance::new(receiver_address.clone(), snapshot_proof.clone());
