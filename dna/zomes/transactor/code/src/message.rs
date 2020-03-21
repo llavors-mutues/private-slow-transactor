@@ -73,6 +73,10 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
                     MessageBody::GetTransactionsSnapshot(OfferMessage::Response(result))
                 })
             }
+            MessageBody::AcceptOffer(OfferMessage::Request(request)) => {
+                accept_offer::sender::receive_accept_offer(request)
+                    .map(|result| MessageBody::AcceptOffer(OfferMessage::Response(result)))
+            }
             _ => Err(ZomeApiError::from(format!("Bad message type"))),
         },
     };

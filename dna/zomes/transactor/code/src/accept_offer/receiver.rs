@@ -2,7 +2,7 @@ use super::{complete_offer_and_update_attestation, AcceptOfferRequest};
 use crate::{
     attestation,
     attestation::Attestation,
-    message::{MessageBody, OfferMessage, OfferResponse},
+    message::{send_message, MessageBody, OfferMessage, OfferResponse},
     offer, proof,
     proof::TransactionCompletedProof,
     transaction::Transaction,
@@ -41,7 +41,9 @@ pub fn accept_offer(
 
     let message = MessageBody::AcceptOffer(OfferMessage::Request(accept_offer_request));
 
-    let response = match message {
+    let result = send_message(transaction.sender_address.clone(), message)?;
+
+    let response = match result {
         MessageBody::AcceptOffer(OfferMessage::Response(response)) => Ok(response),
         _ => Err(ZomeApiError::from(format!(
             "AcceptOffer response is not valid"
