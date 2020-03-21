@@ -6,14 +6,16 @@ use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
-    holochain_core_types::{dna::entry_types::Sharing, signature::Signature},
+    holochain_core_types::{
+        chain_header::ChainHeader, dna::entry_types::Sharing, signature::Signature,
+    },
     ValidationData, AGENT_ADDRESS,
 };
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub enum TransactionRole {
     Sender {
-        receiver_transaction_snapshot_proof: Signature, // Signature of 'transaction_address,last_header_address' by the receiver
+        receiver_snapshot_proof: Signature, // Signature of 'transaction_address,last_header_address' by the receiver
     },
     Receiver {
         sender_attestation_address: Address, // Address of the sender's attestation
@@ -140,6 +142,21 @@ pub fn get_attestations_for_agent(agent_address: &Address) -> ZomeApiResult<Vec<
 }
 
 /**
+ * Gets the last attestation that this agent has committed from the private chain
+ */
+pub fn query_my_last_attestation() -> ZomeApiResult<Attestation> {
+    let attestations: Vec<(ChainHeader, Attestation)> =
+        utils::query_all_into(String::from("attestation"))?;
+
+    match attestations.first() {
+        Some(attestation) => Ok(attestation.1.clone()),
+        None => Err(ZomeApiError::from(format!(
+            "Could not find last attestation"
+        ))),
+    }
+}
+
+/**
  * Gets the attestation identified with the given address from the private chain
  */
 pub fn query_attestation(attestation_address: &Address) -> ZomeApiResult<Attestation> {
@@ -182,6 +199,12 @@ fn validate_transaction_against_attestation(
     attestation: &Attestation,
     transaction: &Transaction,
 ) -> ZomeApiResult<()> {
+    if transaction.sender_address == transaction.receiver_address {
+        return Err(ZomeApiError::from(format!(
+            "A transaction cannot have the same sender and receiver"
+        )));
+    }
+
     let transaction_proof = attestation
         .transaction_proof
         .ok_or(ZomeApiError::from(format!(
@@ -197,7 +220,7 @@ fn validate_transaction_against_attestation(
 
     let role_valid = match transaction_proof.transaction_role {
         TransactionRole::Sender {
-            receiver_transaction_snapshot_proof,
+            receiver_snapshot_proof,
         } => transaction.sender_address == attestation.agent_address,
         TransactionRole::Receiver { .. } => {
             transaction.receiver_address == attestation.agent_address

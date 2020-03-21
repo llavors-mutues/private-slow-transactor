@@ -1,6 +1,6 @@
 use super::{sender, BalanceSnapshot, TransactionsSnapshot};
 use crate::{
-    attestation,
+    accept_offer, attestation,
     message::{send_message, MessageBody, OfferMessage, OfferResponse},
     offer, transaction,
 };
@@ -18,7 +18,7 @@ pub fn get_sender_balance(transaction_address: Address) -> ZomeApiResult<Balance
     match offer.state {
         offer::OfferState::Pending => Ok(()),
         _ => Err(ZomeApiError::from(format!(
-            "Offer is canceled: cannot get balance"
+            "Offer is not pending: cannot get balance"
         ))),
     }?;
 
@@ -80,6 +80,14 @@ fn request_sender_transactions(
 
     match response {
         OfferResponse::OfferPending(transactions_snapshot) => Ok(transactions_snapshot),
+        OfferResponse::OfferCompleted(transaction_proof) => {
+            let offer = offer::query_offer(transaction_address)?;
+
+            accept_offer::receiver::complete_transaction(offer.transaction, transaction_proof)?;
+            Err(ZomeApiError::from(format!(
+                "Transaction had already been executed"
+            )))
+        }
         OfferResponse::OfferCanceled => {
             offer::cancel_offer(transaction_address)?;
             Err(ZomeApiError::from(format!("Offer was canceled")))

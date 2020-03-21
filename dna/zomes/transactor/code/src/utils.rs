@@ -1,5 +1,5 @@
-use hdk::holochain_core_types::chain_header::ChainHeader;
-use hdk::prelude::*;
+use crate::utils;
+use hdk::{holochain_core_types::chain_header::ChainHeader, prelude::*};
 use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, QueryResult};
 use std::convert::TryFrom;
 
@@ -62,8 +62,13 @@ where
 }
 
 /**
- * Builds the snapshot preimage from the given transaction and last_header
+ * Gets the last header of my source chain
  */
-pub fn snapshot_preimage(transaction_address: &Address, last_header_address: &Address) -> String {
-    format!("{},{}", transaction_address, last_header_address)
+pub fn get_my_last_header() -> ZomeApiResult<ChainHeader> {
+    let headers_with_entries = utils::query_all(String::from("*"))?;
+
+    headers_with_entries
+        .first()
+        .map(|h| h.0)
+        .ok_or(ZomeApiError::from(format!("Could not find header")))
 }

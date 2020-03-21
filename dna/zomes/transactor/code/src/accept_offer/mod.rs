@@ -10,5 +10,5 @@ use hdk::{
 pub struct AcceptOfferRequest {
     transaction_address: Address,
     last_header_address: Address,
-    receiver_transaction_snapshot_proof: Signature,
+    receiver_snapshot_proof: Signature,
 }
