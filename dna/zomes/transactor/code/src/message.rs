@@ -1,6 +1,5 @@
 use crate::{
-    accept_offer, create_offer, get_sender_balance, get_sender_balance::TransactionsSnapshot,
-    offer::Offer, proof::TransactionCompletedProof,
+    accept_offer, create_offer, get_chain_snapshot, get_chain_snapshot::ChainSnapshot, offer::Offer,
 };
 use hdk::holochain_core_types::time::Timeout;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
@@ -18,14 +17,14 @@ pub type OfferMessage<Req, Res> = Message<Req, OfferResponse<Res>>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum OfferResponse<Res> {
     OfferPending(Res),
-    OfferCompleted(TransactionCompletedProof),
+    OfferCompleted(Address), // Will contain the attestation address from which to be able to complete the transaction
     OfferCanceled,
 }
 
 #[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
 pub enum MessageBody {
     SendOffer(Message<Offer, ()>),
-    GetTransactionsSnapshot(OfferMessage<Address, TransactionsSnapshot>),
+    GetChainSnapshot(OfferMessage<Address, ChainSnapshot>),
     AcceptOffer(OfferMessage<accept_offer::AcceptOfferRequest, ()>),
 }
 
@@ -68,14 +67,15 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
                 create_offer::receiver::receive_offer(sender_address, offer)
                     .map(|result| MessageBody::SendOffer(Message::Response(result)))
             }
-            MessageBody::GetTransactionsSnapshot(OfferMessage::Request(offer_address)) => {
-                get_sender_balance::sender::get_transactions_snapshot(sender_address, offer_address)
-                    .map(|result| {
-                        MessageBody::GetTransactionsSnapshot(OfferMessage::Response(result))
-                    })
+            MessageBody::GetChainSnapshot(OfferMessage::Request(transaction_address)) => {
+                get_chain_snapshot::receiver::get_chain_snapshot(
+                    sender_address,
+                    transaction_address,
+                )
+                .map(|result| MessageBody::GetChainSnapshot(OfferMessage::Response(result)))
             }
             MessageBody::AcceptOffer(OfferMessage::Request(request)) => {
-                accept_offer::sender::receive_accept_offer(sender_address, request)
+                accept_offer::receiver::receive_accept_offer(sender_address, request)
                     .map(|result| MessageBody::AcceptOffer(OfferMessage::Response(result)))
             }
             _ => Err(ZomeApiError::from(format!("Bad message type"))),

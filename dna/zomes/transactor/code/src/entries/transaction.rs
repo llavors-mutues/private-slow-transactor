@@ -1,5 +1,7 @@
-use crate::{utils, utils::ParseableEntry};
+use crate::utils;
+use holochain_entry_utils::HolochainEntry;
 use hdk::{
+    prelude::Entry,
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
     holochain_core_types::{chain_header::ChainHeader, dna::entry_types::Sharing},
@@ -9,13 +11,13 @@ use hdk::{
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Transaction {
-    pub sender_address: Address,
-    pub receiver_address: Address,
+    pub debtor_address: Address,
+    pub creditor_address: Address,
     pub timestamp: usize,
     pub amount: f64,
 }
 
-impl ParseableEntry for Transaction {
+impl HolochainEntry for Transaction {
     fn entry_type() -> String {
         String::from("transaction")
     }
@@ -23,7 +25,7 @@ impl ParseableEntry for Transaction {
 
 pub fn entry_definition() -> ValidatingEntryType {
     entry!(
-        name: "transaction",
+        name: Transaction::entry_type(),
         description: "private transactions that are the base to compute the total balance",
         sharing: Sharing::Private,
         validation_package: || {
@@ -56,9 +58,9 @@ pub fn compute_balance(agent_address: &Address, transactions: &Vec<Transaction>)
     let mut balance: f64 = 0.0;
 
     for transaction in transactions {
-        if transaction.receiver_address == agent_address.clone() {
+        if transaction.creditor_address == agent_address.clone() {
             balance += transaction.amount as f64;
-        } else if transaction.sender_address == agent_address.clone() {
+        } else if transaction.debtor_address == agent_address.clone() {
             balance -= transaction.amount as f64;
         }
     }
@@ -83,4 +85,11 @@ pub fn are_transactions_valid(
     }
 
     Ok(true)
+}
+
+/**
+ * Filters the entries of the given source chain and returns only the transactions
+ */
+pub fn get_transactions_from_chain_snapshot(chain_snapshot: Vec<(ChainHeader, Entry)>) -> Vec<Transaction> {
+    chain_snapshot.iter().filter_map(|(_, entry)| Transaction::from_entry(entry)).collect()
 }

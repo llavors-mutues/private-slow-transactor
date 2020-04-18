@@ -1,7 +1,7 @@
 pub mod receiver;
 pub mod sender;
 
-use crate::{attestation, attestation::Attestation, offer, utils::ParseableEntry};
+use crate::{attestation, attestation::Attestation, offer};
 use hdk::{
     holochain_core_types::signature::Signature, holochain_persistence_api::cas::content::Address,
     prelude::*,

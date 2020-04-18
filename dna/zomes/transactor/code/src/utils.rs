@@ -1,30 +1,7 @@
 use crate::utils;
 use hdk::{holochain_core_types::chain_header::ChainHeader, prelude::*};
 use holochain_wasm_utils::api_serialization::{QueryArgsNames, QueryArgsOptions, QueryResult};
-use std::convert::TryFrom;
-
-pub trait ParseableEntry: TryFrom<JsonString> + Into<JsonString> + Clone {
-    fn from_entry(entry: &Entry) -> Option<Self> {
-        if let Entry::App(entry_type, attestation_entry) = entry {
-            if entry_type.to_string() == Self::entry_type() {
-                if let Ok(t) = Self::try_from(attestation_entry.clone()) {
-                    return Some(t);
-                }
-            }
-        }
-        None
-    }
-
-    fn entry(self) -> Entry {
-        Entry::App(Self::entry_type().into(), self.into())
-    }
-
-    fn entry_type() -> String;
-
-    fn address(&self) -> ZomeApiResult<Address> {
-        hdk::entry_address(&self.clone().entry())
-    }
-}
+use holochain_entry_utils::HolochainEntry;
 
 /**
  * Retrieve all entries of the given type from the private chain
@@ -49,7 +26,7 @@ pub fn query_all(entry_type: String) -> ZomeApiResult<Vec<(ChainHeader, Entry)>>
  */
 pub fn query_all_into<T>() -> ZomeApiResult<Vec<(ChainHeader, T)>>
 where
-    T: ParseableEntry,
+    T: HolochainEntry,
 {
     let headers_with_entries = query_all(T::entry_type())?;
     let entry_to_parsed =

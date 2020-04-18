@@ -12,7 +12,7 @@ import {
 
 import { MyTransactions } from './elements/mutual-credit-my-transactions';
 
-import en from '../i18n/en.json';
+import en from './i18n/en.json';
 import { mutualCreditTypeDefs } from './graphql/schema';
 import { MutualCreditBindings } from './types';
 import { resolvers } from './graphql/resolvers';

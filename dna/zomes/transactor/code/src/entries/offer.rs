@@ -1,6 +1,6 @@
 use crate::transaction::Transaction;
 use crate::utils;
-use crate::utils::ParseableEntry;
+use holochain_entry_utils::HolochainEntry;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::chain_header::ChainHeader;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
@@ -14,6 +14,9 @@ use hdk::{
 pub enum OfferState {
     Pending,
     Canceled,
+    Approved {
+        last_header_address: Address
+    },
     Completed { attestation_address: Address },
 }
 
@@ -23,7 +26,7 @@ pub struct Offer {
     pub state: OfferState,
 }
 
-impl ParseableEntry for Offer {
+impl HolochainEntry for Offer {
     fn entry_type() -> String {
         String::from("offer")
     }
@@ -31,7 +34,7 @@ impl ParseableEntry for Offer {
 
 pub fn entry_definition() -> ValidatingEntryType {
     entry!(
-        name: "offer",
+        name: Offer::entry_type(),
         description: "offer private entry to temporarily store the data of a transaction before accepting it",
         sharing: Sharing::Private,
         validation_package: || {
@@ -69,6 +72,21 @@ pub fn query_offer(transaction_address: &Address) -> ZomeApiResult<Offer> {
  */
 pub fn cancel_offer(transaction_address: &Address) -> ZomeApiResult<()> {
     update_offer_state(transaction_address, OfferState::Canceled)
+}
+
+/**
+ * Updates the private offer to a completed state
+ */
+pub fn approve_offer(
+    transaction_address: &Address,
+    last_header_address: &Address,
+) -> ZomeApiResult<()> {
+    update_offer_state(
+        transaction_address,
+        OfferState::Approved {
+            last_header_address: last_header_address.clone(),
+        },
+    )
 }
 
 /**

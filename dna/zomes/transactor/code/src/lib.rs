@@ -8,6 +8,7 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
+extern crate holochain_entry_utils;
 
 use hdk::prelude::*;
 
@@ -20,12 +21,11 @@ use entries::transaction;
 
 pub mod accept_offer;
 pub mod create_offer;
-pub mod get_sender_balance;
+pub mod get_chain_snapshot;
 pub mod message;
-pub mod proof;
 pub mod utils;
 
-use get_sender_balance::BalanceSnapshot;
+use get_chain_snapshot::BalanceSnapshot;
 
 #[zome]
 mod transactor {
@@ -65,8 +65,8 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_sender_balance(transaction_address: Address) -> ZomeApiResult<BalanceSnapshot> {
-        get_sender_balance::receiver::get_sender_balance(transaction_address)
+    pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<BalanceSnapshot> {
+        get_chain_snapshot::sender::get_counterparty_balance(transaction_address)
     }
 
     #[zome_fn("hc_public")]
@@ -74,7 +74,7 @@ mod transactor {
         transaction_address: Address,
         last_header_address: Address,
     ) -> ZomeApiResult<Address> {
-        accept_offer::receiver::accept_offer(transaction_address, last_header_address)
+        accept_offer::sender::accept_offer(transaction_address, last_header_address)
     }
 
     #[zome_fn("hc_public")]

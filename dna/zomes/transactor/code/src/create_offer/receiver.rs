@@ -1,20 +1,18 @@
-use crate::{
-    offer::{Offer, OfferState},
-    utils::ParseableEntry,
-};
+use crate::offer::{Offer, OfferState};
 use hdk::{prelude::*, AGENT_ADDRESS};
+use holochain_entry_utils::HolochainEntry;
 
 /**
  * Receive and offer, check that it's valid, and store it privately
  */
 pub fn receive_offer(sender_address: Address, offer: Offer) -> ZomeApiResult<()> {
-    if sender_address != offer.transaction.sender_address {
+    if sender_address != offer.transaction.debtor_address {
         return Err(ZomeApiError::from(format!(
             "This offer is not from the agent that sent the message"
         )));
     }
 
-    if offer.transaction.receiver_address != AGENT_ADDRESS.clone() {
+    if offer.transaction.creditor_address != AGENT_ADDRESS.clone() {
         return Err(ZomeApiError::from(format!("This offer is not for me")));
     }
     match offer.state {

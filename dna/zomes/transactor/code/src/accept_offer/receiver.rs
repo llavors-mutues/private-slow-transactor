@@ -1,188 +1,94 @@
 use super::{complete_offer_and_update_attestation, AcceptOfferRequest};
 use crate::{
-    attestation,
-    attestation::Attestation,
-    message::{send_message, MessageBody, OfferMessage, OfferResponse},
-    offer, proof,
-    proof::TransactionCompletedProof,
-    transaction::Transaction,
-    utils,
-    utils::ParseableEntry,
+    attestation, attestation::Attestation, message::OfferResponse, offer, offer::OfferState, transaction::Transaction, utils,
 };
-use hdk::{
-    holochain_core_types::{
-        chain_header::ChainHeader,
-        signature::{Provenance, Signature},
-    },
-    holochain_persistence_api::cas::content::Address,
-    prelude::*,
-    AGENT_ADDRESS,
-};
+use hdk::{holochain_core_types::signature::Signature, prelude::*, AGENT_ADDRESS};
+use holochain_entry_utils::HolochainEntry;
 
 /**
- * Accepts the offer, verifying that the source chain of the sender agent has not changed,
- * and creating the transaction privately
+ * Process accept offer request, creating the transaction, updating the offer and updating the attestation
  */
-pub fn accept_offer(
-    transaction_address: Address,
-    last_header_address: Address,
-) -> ZomeApiResult<Address> {
+pub fn receive_accept_offer(sender_address: Address, request: AcceptOfferRequest) -> ZomeApiResult<OfferResponse<()>> {
+    let transaction_address = request.transaction_address.clone();
     let offer = offer::query_offer(&transaction_address)?;
 
-    let transaction = offer.transaction;
+    if offer.transaction.creditor_address != sender_address {
+        return Err(ZomeApiError::from(format!(
+            "The sender of the message is not the creditor of the transaction"
+        )));
+    }
 
-    let signature = create_snapshot_proof(&transaction_address, &last_header_address)?;
-
-    let accept_offer_request = AcceptOfferRequest {
-        transaction_address: transaction_address.clone(),
-        last_header_address: last_header_address.clone(),
-        receiver_snapshot_proof: signature,
-    };
-
-    let message = MessageBody::AcceptOffer(OfferMessage::Request(accept_offer_request));
-
-    let result = send_message(transaction.sender_address.clone(), message)?;
-
-    let response = match result {
-        MessageBody::AcceptOffer(OfferMessage::Response(response)) => Ok(response),
-        _ => Err(ZomeApiError::from(format!(
-            "AcceptOffer response is not valid"
-        ))),
-    }?;
-
-    match response {
-        OfferResponse::OfferCompleted(proof) => complete_transaction(transaction, proof),
-        OfferResponse::OfferPending(()) => {
-            Err(ZomeApiError::from(format!("Offer is still pending?")))
-        }
-        OfferResponse::OfferCanceled => {
-            offer::cancel_offer(&transaction_address)?;
-            Err(ZomeApiError::from(format!("Offer was canceled")))
-        }
+    match offer.state {
+        OfferState::Pending => create_transaction_and_attestation(offer.transaction, request)
+            .map(|proof| OfferResponse::OfferCompleted(proof)),
+        OfferState::Completed {
+            attestation_address,
+        } => proof::get_existing_transaction_proof(&attestation_address)
+            .map(|proof| OfferResponse::OfferCompleted(proof)),
+        OfferState::Canceled => Ok(OfferResponse::OfferCanceled),
     }
 }
 
 /**
- * Validate the received proof from the sender of the transaction and execute it
+ * Validate signatures and snapshot proof, create the transaction and my attestation, and return TransactionCompletedProof
  */
-pub fn complete_transaction(
+pub fn create_transaction_and_attestation(
     transaction: Transaction,
-    proof: TransactionCompletedProof,
-) -> ZomeApiResult<Address> {
-    validate_proof(&transaction, &proof)?;
-    
-    attestation::create_initial_attestation()?;
+    request: AcceptOfferRequest,
+) -> ZomeApiResult<TransactionCompletedProof> {
+    validate_request(&transaction, &request)?;
+    let transaction_address = hdk::commit_entry(&transaction.entry())?;
 
-    let sender_attestation = Attestation::for_sender(
-        &transaction.sender_address.clone(),
-        &proof.last_attestation_address,
-        &transaction.address()?,
-        &proof.transaction_header.0.address(),
-        &proof.transaction_header.1,
-        &proof.receiver_snapshot_proof,
-    );
-
-    let new_sender_attestation_address =
-        hdk::update_entry(sender_attestation.entry(), &proof.last_attestation_address)?;
-    let transaction_address = hdk::commit_entry(&transaction.clone().entry())?;
     let transaction_header = utils::get_my_last_header()?;
 
     let transaction_header_address = transaction_header.address();
-    let header_signature = Signature::from(hdk::sign(transaction_header_address.clone())?);
 
+    let header_signature = Signature::from(hdk::sign(transaction_header_address.clone())?);
     let last_attestation = attestation::query_my_last_attestation()?;
     let last_attestation_address = last_attestation.address()?;
 
-    let receiver_attestation = Attestation::for_receiver(
+    let attestation = Attestation::for_sender(
         &AGENT_ADDRESS.clone(),
         &last_attestation_address,
-        &transaction.address()?,
+        &transaction_address,
         &transaction_header_address,
         &header_signature,
-        &new_sender_attestation_address,
+        &request.receiver_snapshot_proof,
     );
 
-    complete_offer_and_update_attestation(receiver_attestation)?;
+    complete_offer_and_update_attestation(attestation)?;
 
-    Ok(transaction_address)
+    Ok(TransactionCompletedProof {
+        transaction_header: (transaction_header, header_signature),
+        last_attestation_address,
+        receiver_snapshot_proof: request.receiver_snapshot_proof,
+    })
 }
 
 /**
- * Validates that the response proof is valid
+ * Validate that the transaction
  */
-fn validate_proof(
-    transaction: &Transaction,
-    proof: &TransactionCompletedProof,
-) -> ZomeApiResult<()> {
-    let last_header_address =
-        proof
-            .transaction_header
-            .0
-            .link()
-            .ok_or(ZomeApiError::from(format!(
-                "Bad chain header: no last header present"
-            )))?;
+fn validate_request(transaction: &Transaction, request: &AcceptOfferRequest) -> ZomeApiResult<()> {
+    if transaction.debtor_address != AGENT_ADDRESS.clone() {
+        return Err(ZomeApiError::from(format!(
+            "I'm not the sender of the given transaction"
+        )));
+    }
+
+    let last_chain_header = utils::get_my_last_header()?;
+
+    if last_chain_header.address() != request.last_header_address {
+        return Err(ZomeApiError::from(format!(
+            "Last header has moved: try again"
+        )));
+    }
 
     proof::validate_snapshot_proof(
-        &AGENT_ADDRESS.clone(),
+        &transaction.creditor_address,
         &transaction.address()?,
-        &last_header_address,
-        &proof.receiver_snapshot_proof,
-    )?;
-
-    validate_transaction_header(
-        &transaction,
-        &proof.transaction_header.0,
-        &proof.transaction_header.1,
+        &request.last_header_address,
+        &request.receiver_snapshot_proof,
     )?;
 
     Ok(())
-}
-
-/**
- * Validates that the chain header received from the sender of the transaction is appropriate for the offer that we sent
- */
-fn validate_transaction_header(
-    transaction: &Transaction,
-    chain_header: &ChainHeader,
-    header_signature: &Signature,
-) -> ZomeApiResult<()> {
-    if chain_header.entry_address().clone() != transaction.address()? {
-        return Err(ZomeApiError::from(format!(
-            "Received transaction address is not correct"
-        )));
-    }
-    if transaction.address()? != chain_header.entry_address().clone() {
-        return Err(ZomeApiError::from(format!(
-            "Entry address in the header is not equal to the transaction address"
-        )));
-    }
-
-    let chain_header_address = chain_header.address();
-    hdk::verify_signature(
-        Provenance::new(transaction.sender_address.clone(), header_signature.clone()),
-        chain_header_address,
-    )?;
-
-    Ok(())
-}
-
-/**
- * Builds and signs the snapshot proof for the given transaction and last_header
- */
-fn create_snapshot_proof(
-    transaction_address: &Address,
-    last_header_address: &Address,
-) -> ZomeApiResult<Signature> {
-    let preimage = proof::snapshot_proof_preimage(transaction_address, last_header_address);
-    let signature = hdk::sign(preimage)?;
-
-    hdk::debug(format!(
-        "hohoho1 {} {} {} {:?}",
-        AGENT_ADDRESS.clone(),
-        transaction_address,
-        last_header_address,
-        signature
-    ))?;
-    Ok(Signature::from(signature))
 }

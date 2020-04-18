@@ -3,9 +3,9 @@ use crate::{
     message::{Message, MessageBody},
     offer::{Offer, OfferState},
     transaction::Transaction,
-    utils::ParseableEntry,
 };
 use hdk::{prelude::*, AGENT_ADDRESS};
+use holochain_entry_utils::HolochainEntry;
 
 /**
  * Sends an offer to the receiver address, and when Creates a private offer to the given receiver address, setting up the transaction
@@ -17,8 +17,8 @@ pub fn create_offer(
     timestamp: usize,
 ) -> ZomeApiResult<Address> {
     let transaction = Transaction {
-        sender_address: AGENT_ADDRESS.clone(),
-        receiver_address: receiver_address.clone(),
+        debtor_address: AGENT_ADDRESS.clone(),
+        creditor_address: receiver_address.clone(),
         amount,
         timestamp,
     };
