@@ -6,9 +6,11 @@ This zome is a generic implementation of a mutual credit system. It's just a pie
 
 > This is a work in progress, not production ready. Contact us if you want to collaborate!
 
+Design: https://hackmd.io/X9KFfDJZRS2vL9uLOq1oAg?both
+
 ## Todo list:
 
-* [ ] Refactor code to use transactions as private entries and their headers to validate attestations by agents
+* [x] Refactor code to use transactions as private entries and their headers to validate attestations by agents
 * [ ] Security audit to protect from "double-spending" (rolling your chain back and doing a new transaction) attack vectors
 * [ ] Create a reusable UI module
 * [ ] Add the ability to pass in the currency name and credit limit as parameter
