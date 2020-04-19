@@ -60,11 +60,47 @@ pub fn entry_definition() -> ValidatingEntryType {
                     hdk::ValidationPackageDefinition::Entry
                 },
                 validation: | _validation_data: hdk::LinkValidationData | {
-                    Ok(())
+                    match _validation_data {
+                        hdk::LinkValidationData::LinkAdd {link, validation_data, } => {
+                            let author = validation_data.package.chain_header.provenances()[0].source();
+
+                            let attestation: Attestation = hdk::utils::get_as_type(link.link.target().clone())?;
+
+                            let chain_headers = get_attestation_headers(&attestation)?;
+
+                            match chain_headers.iter().find(|h| h.provenances()[0].source() == author) {
+                                Some(_) => Ok(()),
+                                None => Err(String::from("Author is not in the attestation headers list"))
+                            }
+                        },
+                        _=> Err(String::from("Cannot remove an attestation link"))
+                    }
                 }
             )
         ]
     )
+}
+
+pub fn get_attestation_headers(attestation: &Attestation) -> ZomeApiResult<Vec<ChainHeader>> {
+    let headers: Vec<Entry> = attestation
+        .clone()
+        .header_addresses
+        .into_iter()
+        .map(|header_address| match hdk::get_entry(&header_address) {
+            Ok(Some(entry)) => Ok(entry),
+            _ => Err(ZomeApiError::from(String::from("Could not get header"))),
+        })
+        .collect::<ZomeApiResult<Vec<Entry>>>()?;
+
+    headers
+        .iter()
+        .map(|h| match h {
+            Entry::ChainHeader(chain_header) => Ok(chain_header.clone()),
+            _ => Err(ZomeApiError::from(String::from(
+                "Could not transform header",
+            ))),
+        })
+        .collect::<ZomeApiResult<Vec<ChainHeader>>>()
 }
 
 /**
@@ -74,25 +110,7 @@ pub fn validate_attestation(
     attestation: Attestation,
     _validation_data: ValidationData,
 ) -> Result<(), String> {
-    let headers: Vec<Entry> = attestation
-        .header_addresses
-        .into_iter()
-        .map(|header_address| match hdk::get_entry(&header_address) {
-            Ok(Some(entry)) => Ok(entry),
-            _ => Err(ZomeApiError::from(String::from("Could not get header"))),
-        })
-        .collect::<ZomeApiResult<Vec<Entry>>>()?;
-
-    let chain_headers: Vec<ChainHeader> = headers
-        .iter()
-        .map(|h| match h {
-            Entry::ChainHeader(chain_header) => Ok(chain_header.clone()),
-            _ => Err(ZomeApiError::from(String::from(
-                "Could not transform header",
-            ))),
-        })
-        .collect::<ZomeApiResult<Vec<ChainHeader>>>()?;
-
+    let chain_headers: Vec<ChainHeader> = get_attestation_headers(&attestation)?;
     validate_transaction_headers(&chain_headers)?;
 
     Ok(())
