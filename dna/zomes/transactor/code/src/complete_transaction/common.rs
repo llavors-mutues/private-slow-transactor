@@ -1,6 +1,6 @@
 use crate::{
     attestation::{validate_transaction_headers, Attestation},
-    transaction,
+    offer, transaction,
     transaction::Transaction,
     utils,
 };
@@ -40,6 +40,8 @@ pub fn create_attestation(
             "",
         )?;
     }
+
+    offer::complete_offer(chain_headers[0].entry_address(), &attestation_address)?;
 
     Ok(attestation_address)
 }
