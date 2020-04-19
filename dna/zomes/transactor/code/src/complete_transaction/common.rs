@@ -9,9 +9,9 @@ use holochain_entry_utils::HolochainEntry;
 pub fn validate_last_header_still_unchanged(last_header_address: Address) -> ZomeApiResult<()> {
     let last_header = utils::get_my_last_header()?;
 
-    match last_header.address() {
-        last_header_address => Ok(()),
-        _ => Err(ZomeApiError::from(format!("Last header has changed"))),
+    match last_header.address() == last_header_address {
+        true => Ok(()),
+        false => Err(ZomeApiError::from(format!("Last header has changed"))),
     }
 }
 

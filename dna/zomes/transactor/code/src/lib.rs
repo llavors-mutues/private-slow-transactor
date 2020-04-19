@@ -74,7 +74,7 @@ mod transactor {
         transaction_address: Address,
         last_header_address: Address,
     ) -> ZomeApiResult<()> {
-        complete_transaction::sender::accept_offer(transaction_address, last_header_address)
+        complete_transaction::accept_offer::send_accept_offer(transaction_address, last_header_address)
     }
 
     #[zome_fn("hc_public")]

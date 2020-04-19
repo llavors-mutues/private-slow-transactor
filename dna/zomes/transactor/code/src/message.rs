@@ -1,12 +1,13 @@
 use crate::complete_transaction::{
-    AcceptOfferRequest, CompleteTransactionRequest, CompleteTransactionResponse,
-    SignAttestationRequest,
+    accept_offer::AcceptOfferRequest,
+    complete_transaction::{CompleteTransactionRequest, CompleteTransactionResponse},
+    sign_attestation::SignAttestationRequest,
 };
 use crate::{
-    complete_transaction, create_offer, entries::attestation::Attestation, get_chain_snapshot,
-    get_chain_snapshot::ChainSnapshot, offer::Offer,
+    complete_transaction, create_offer, get_chain_snapshot, get_chain_snapshot::ChainSnapshot,
+    offer::Offer,
 };
-use hdk::holochain_core_types::{chain_header::ChainHeader, signature::Signature, time::Timeout};
+use hdk::holochain_core_types::{signature::Signature, time::Timeout};
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::prelude::*;
 use std::convert::TryInto;
@@ -81,7 +82,7 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
                 .map(|result| MessageBody::GetChainSnapshot(OfferMessage::Response(result)))
             }
             MessageBody::AcceptOffer(OfferMessage::Request(accept_offer_request)) => {
-                complete_transaction::receiver::receive_accept_offer(
+                complete_transaction::accept_offer::receive_accept_offer(
                     sender_address,
                     accept_offer_request,
                 )
@@ -89,13 +90,13 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
             }
             MessageBody::CompleteTransaction(OfferMessage::Request(
                 complete_transaction_request,
-            )) => complete_transaction::receiver::receive_complete_transaction(
+            )) => complete_transaction::complete_transaction::receive_complete_transaction(
                 sender_address,
                 complete_transaction_request.chain_header,
             )
             .map(|result| MessageBody::CompleteTransaction(OfferMessage::Response(result))),
             MessageBody::SignAttestation(OfferMessage::Request(sign_attestation_request)) => {
-                complete_transaction::receiver::receive_sign_attestation_request(
+                complete_transaction::sign_attestation::receive_sign_attestation_request(
                     sender_address,
                     sign_attestation_request,
                 )
