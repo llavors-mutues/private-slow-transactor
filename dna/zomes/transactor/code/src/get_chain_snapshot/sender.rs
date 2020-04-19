@@ -36,8 +36,10 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
 
     validate_snapshot_is_valid(&counterparty_address, &chain_snapshot)?;
 
+    hdk::debug(format!("hohoho {:?}", chain_snapshot))?;
     let mut transactions =
         transaction::get_transactions_from_chain_snapshot(chain_snapshot.snapshot);
+    hdk::debug(format!("hohoho2 {:?}", transactions))?;
 
     let balance = transaction::compute_balance(&counterparty_address, &transactions);
 

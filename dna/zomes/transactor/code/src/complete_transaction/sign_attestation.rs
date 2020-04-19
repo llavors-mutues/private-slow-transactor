@@ -74,11 +74,10 @@ pub fn handle_sign_attestation(
             "Could not find my transaction header",
         )))?;
 
-    let previous_header_address = my_header
-        .link()
-        .ok_or(ZomeApiError::from(String::from("Bad header")))?;
-
-    validate_last_header_still_unchanged(previous_header_address)?;
+    // TODO: When the ZomeCalls contexts become separate, change to my_header.link()
+    let header_address = my_header.address();
+    
+    validate_last_header_still_unchanged(header_address)?;
 
     validate_transaction_headers(&sign_attestation_request.chain_headers)?;
 
