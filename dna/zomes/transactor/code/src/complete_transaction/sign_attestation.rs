@@ -76,7 +76,7 @@ pub fn handle_sign_attestation(
 
     // TODO: When the ZomeCalls contexts become separate, change to my_header.link()
     let header_address = my_header.address();
-    
+
     validate_last_header_still_unchanged(header_address)?;
 
     validate_transaction_headers(&sign_attestation_request.chain_headers)?;

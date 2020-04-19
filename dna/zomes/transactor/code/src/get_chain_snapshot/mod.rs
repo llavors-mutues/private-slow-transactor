@@ -1,7 +1,7 @@
-use hdk::prelude::Entry;
+use hdk::holochain_core_types::chain_header::ChainHeader;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
-use hdk::holochain_core_types::chain_header::ChainHeader;
+use hdk::prelude::Entry;
 
 pub mod receiver;
 pub mod sender;
@@ -16,5 +16,4 @@ pub struct BalanceSnapshot {
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct ChainSnapshot {
     pub snapshot: Vec<(ChainHeader, Entry)>,
-    pub last_header_address: Address,
 }

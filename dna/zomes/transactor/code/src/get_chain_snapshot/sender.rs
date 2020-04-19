@@ -11,8 +11,6 @@ use hdk::holochain_core_types::chain_header::ChainHeader;
 use hdk::{prelude::*, AGENT_ADDRESS};
 use holochain_entry_utils::HolochainEntry;
 
-/*** One agent checks that the balance of the other is correct with the credit limit or in his opinion ***/
-
 /**
  * Get the balance snapshot from the sender of the transaction
  * Then it returns offer balance, whether it's executable, and the last_header_address of the chain of that agent
@@ -37,7 +35,7 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
     validate_snapshot_is_valid(&counterparty_address, &chain_snapshot)?;
 
     let mut transactions =
-        transaction::get_transactions_from_chain_snapshot(chain_snapshot.snapshot);
+        transaction::get_transactions_from_chain_snapshot(chain_snapshot.snapshot.clone());
 
     let balance = transaction::compute_balance(&counterparty_address, &transactions);
 
@@ -50,7 +48,7 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
     Ok(BalanceSnapshot {
         balance,
         executable,
-        last_header_address: chain_snapshot.last_header_address,
+        last_header_address: chain_snapshot.snapshot[0].0.address(),
     })
 }
 

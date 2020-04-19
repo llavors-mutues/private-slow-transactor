@@ -38,11 +38,9 @@ pub fn get_chain_snapshot(
  * Get the list of transactions and the last header from the source chain
  */
 pub fn get_my_chain_snapshot() -> ZomeApiResult<ChainSnapshot> {
-    let last_header = utils::get_my_last_header()?;
     let snapshot = utils::query_all(String::from("*"))?;
 
     Ok(ChainSnapshot {
-        last_header_address: last_header.address(),
         snapshot,
     })
 }
