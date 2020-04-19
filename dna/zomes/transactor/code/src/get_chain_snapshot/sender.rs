@@ -38,6 +38,8 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
         transaction::get_transactions_from_chain_snapshot(chain_snapshot.snapshot.clone());
 
     let balance = transaction::compute_balance(&counterparty_address, &transactions);
+    let valid =
+        transaction::are_transactions_valid(&offer.transaction.debtor_address, &transactions)?;
 
     // Add offer to the transaction list to verify that it is valid
     transactions.push(offer.transaction.clone());
@@ -48,6 +50,7 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
     Ok(BalanceSnapshot {
         balance,
         executable,
+        valid,
         last_header_address: chain_snapshot.snapshot[0].0.address(),
     })
 }

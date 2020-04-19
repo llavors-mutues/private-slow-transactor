@@ -113,7 +113,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   await s.consistency();
   t.ok(result);
 
-  result = await offerCredits(aliceAddress, 81)(bob);
+  result = await offerCredits(bobAddress, 81)(alice);
   await s.consistency();
   t.ok(result.Ok);
 
@@ -122,6 +122,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   result = await getCounterpartyBalance(result.Ok)(bob);
   t.equal(result.Ok.balance, -20);
   t.equal(result.Ok.executable, false);
+  t.equal(result.Ok.valid, true);
 });
 
 orchestrator.run();

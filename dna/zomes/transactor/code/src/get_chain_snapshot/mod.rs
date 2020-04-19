@@ -9,6 +9,7 @@ pub mod sender;
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct BalanceSnapshot {
     balance: f64,
+    valid: bool,
     executable: bool,
     last_header_address: Address,
 }
