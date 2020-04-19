@@ -78,7 +78,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   let transactionAddress = result.Ok;
 
   result = await getCounterpartyBalance(result.Ok)(alice);
-  t.equal(result.Ok.sender_balance, 0);
+  t.equal(result.Ok.balance, 0);
   t.equal(result.Ok.executable, true);
 
   result = await acceptOffer(
@@ -95,7 +95,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   transactionAddress = result.Ok;
 
   result = await getCounterpartyBalance(result.Ok)(bob);
-  t.equal(result.Ok.sender_balance, -10);
+  t.equal(result.Ok.balance, -10);
   t.equal(result.Ok.executable, true);
 
 
@@ -106,7 +106,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   transactionAddress = result.Ok;
 
   result = await getCounterpartyBalance(result.Ok)(bob);
-  t.equal(result.Ok.sender_balance, 10);
+  t.equal(result.Ok.balance, 10);
   t.equal(result.Ok.executable, true);
 });
 

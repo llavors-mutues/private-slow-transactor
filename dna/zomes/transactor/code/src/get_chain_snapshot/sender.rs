@@ -2,7 +2,9 @@ use super::{BalanceSnapshot, ChainSnapshot};
 use crate::{
     attestation,
     message::{send_message, MessageBody, OfferMessage, OfferResponse},
-    offer, transaction,
+    offer,
+    offer::OfferState,
+    transaction,
     transaction::Transaction,
 };
 use hdk::holochain_core_types::chain_header::ChainHeader;
@@ -19,7 +21,7 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
     let offer = offer::query_offer(&transaction_address)?;
 
     match offer.state {
-        offer::OfferState::Pending => Ok(()),
+        OfferState::Pending | OfferState::Approved { .. } => Ok(()),
         _ => Err(ZomeApiError::from(format!(
             "Offer is not pending: cannot get balance"
         ))),
