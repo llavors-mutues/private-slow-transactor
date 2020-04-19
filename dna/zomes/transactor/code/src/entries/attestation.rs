@@ -7,12 +7,17 @@ use hdk::prelude::Entry;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
-        chain_header::ChainHeader, dna::entry_types::Sharing, link::LinkMatch, time::Iso8601,
+        chain_header::ChainHeader,
+        dna::entry_types::Sharing,
+        link::LinkMatch,
+        time::{Iso8601, Timeout},
     },
     ValidationData,
 };
 use holochain_entry_utils::HolochainEntry;
-use holochain_wasm_utils::api_serialization::get_links::LinksResult;
+use holochain_wasm_utils::api_serialization::get_links::{
+    GetLinksOptions, LinksResult, LinksStatusRequestKind,
+};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Attestation {
@@ -99,10 +104,19 @@ pub fn validate_attestation(
 pub fn get_latest_attestation_for(
     agent_address: &Address,
 ) -> ZomeApiResult<(Option<Attestation>, usize)> {
-    let links_result = hdk::get_links(
+    let options = GetLinksOptions {
+        status_request: LinksStatusRequestKind::default(),
+        headers: true,
+        timeout: Timeout::default(),
+        pagination: None,
+        sort_order: None,
+    };
+
+    let links_result = hdk::get_links_with_options(
         &agent_address,
         LinkMatch::Exactly("agent->attestation"),
         LinkMatch::Any,
+        options,
     )?;
 
     let links = links_result.links();

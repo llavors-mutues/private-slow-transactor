@@ -123,8 +123,7 @@ fn validate_snapshot_is_valid(
  * Validates that the given list of headers and entries is valid
  */
 fn validate_chain_snapshot(chain_snapshot: &Vec<(ChainHeader, Entry)>) -> ZomeApiResult<()> {
-    for i in 0..chain_snapshot.len() {
-        let (chain_header, entry) = chain_snapshot[i].clone();
+    for (i, (chain_header, entry)) in chain_snapshot.iter().enumerate() {
         if &entry.address() != chain_header.entry_address() {
             return Err(ZomeApiError::from(String::from("Bad chain header")));
         }
