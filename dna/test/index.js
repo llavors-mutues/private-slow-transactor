@@ -131,6 +131,8 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   await s.consistency();
   t.notOk(result.Ok);
 
+  result = await getCounterpartyBalance(transactionAddress)(bob);
+  t.notOk(result.Ok);
 });
 
 orchestrator.run();
