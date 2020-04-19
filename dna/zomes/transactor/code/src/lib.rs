@@ -19,7 +19,7 @@ use entries::attestation;
 use entries::offer;
 use entries::transaction;
 
-pub mod accept_offer;
+pub mod complete_transaction;
 pub mod create_offer;
 pub mod get_chain_snapshot;
 pub mod message;
@@ -73,8 +73,8 @@ mod transactor {
     pub fn accept_offer(
         transaction_address: Address,
         last_header_address: Address,
-    ) -> ZomeApiResult<Address> {
-        accept_offer::sender::accept_offer(transaction_address, last_header_address)
+    ) -> ZomeApiResult<()> {
+        complete_transaction::sender::accept_offer(transaction_address, last_header_address)
     }
 
     #[zome_fn("hc_public")]

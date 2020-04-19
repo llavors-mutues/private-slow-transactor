@@ -15,7 +15,7 @@ pub enum OfferState {
     Pending,
     Canceled,
     Approved {
-        last_header_address: Address
+        approved_header_address: Option<Address>
     },
     Completed { attestation_address: Address },
 }
@@ -79,12 +79,12 @@ pub fn cancel_offer(transaction_address: &Address) -> ZomeApiResult<()> {
  */
 pub fn approve_offer(
     transaction_address: &Address,
-    last_header_address: &Address,
+    approved_header_address: &Option<Address>,
 ) -> ZomeApiResult<()> {
     update_offer_state(
         transaction_address,
         OfferState::Approved {
-            last_header_address: last_header_address.clone(),
+            approved_header_address: approved_header_address.clone(),
         },
     )
 }

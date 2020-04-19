@@ -1,6 +1,6 @@
 use super::{BalanceSnapshot, ChainSnapshot};
 use crate::{
-    accept_offer, attestation,
+    attestation,
     message::{send_message, MessageBody, OfferMessage, OfferResponse},
     offer, transaction,
     transaction::Transaction,
@@ -26,8 +26,8 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
     }?;
 
     let counterparty_address = match offer.transaction.debtor_address == AGENT_ADDRESS.clone() {
-        true => offer.transaction.creditor_address,
-        false => offer.transaction.debtor_address,
+        true => offer.transaction.creditor_address.clone(),
+        false => offer.transaction.debtor_address.clone(),
     };
 
     let chain_snapshot = request_chain_snapshot(&transaction_address, &counterparty_address)?;
@@ -73,14 +73,6 @@ fn request_chain_snapshot(
 
     match response {
         OfferResponse::OfferPending(transactions_snapshot) => Ok(transactions_snapshot),
-        OfferResponse::OfferCompleted(transaction_proof) => {
-            let offer = offer::query_offer(transaction_address)?;
-
-            accept_offer::sender::complete_transaction(offer.transaction, transaction_proof)?;
-            Err(ZomeApiError::from(format!(
-                "Transaction had already been executed"
-            )))
-        }
         OfferResponse::OfferCanceled => {
             offer::cancel_offer(transaction_address)?;
             Err(ZomeApiError::from(format!("Offer was canceled")))
@@ -95,12 +87,13 @@ fn validate_snapshot_is_valid(
     agent_address: &Address,
     chain_snapshot: &ChainSnapshot,
 ) -> ZomeApiResult<()> {
-    validate_chain_snapshot(chain_snapshot.snapshot)?;
+    validate_chain_snapshot(&chain_snapshot.snapshot)?;
     // Get the last attestation for the agent
     let (maybe_attestation, attestation_count) =
-        attestation::get_last_attestation_for(&agent_address)?;
+        attestation::get_latest_attestation_for(&agent_address)?;
     let transactions: Vec<(ChainHeader, Entry)> = chain_snapshot
         .snapshot
+        .clone()
         .into_iter()
         .filter(|(_, entry)| Transaction::from_entry(&entry).is_some())
         .collect();
@@ -113,7 +106,10 @@ fn validate_snapshot_is_valid(
 
     match (maybe_attestation, transactions.get(0)) {
         (Some(attestation), Some(transaction)) => {
-            match transaction.0.address() == attestation.agent_header.header_address {
+            match attestation
+                .header_addresses
+                .contains(&transaction.0.address())
+            {
                 true => Ok(()),
                 false => Err(ZomeApiError::from(String::from("Bad chain snapshot"))),
             }
@@ -126,19 +122,22 @@ fn validate_snapshot_is_valid(
 /**
  * Validates that the given list of headers and entries is valid
  */
-fn validate_chain_snapshot(chain_snapshot: Vec<(ChainHeader, Entry)>) -> ZomeApiResult<()> {
+fn validate_chain_snapshot(chain_snapshot: &Vec<(ChainHeader, Entry)>) -> ZomeApiResult<()> {
     for i in 0..chain_snapshot.len() {
-        let (chain_header, entry) = chain_snapshot[i];
+        let (chain_header, entry) = chain_snapshot[i].clone();
         if &entry.address() != chain_header.entry_address() {
             return Err(ZomeApiError::from(String::from("Bad chain header")));
         }
 
         if let Some((next_header, _)) = chain_snapshot.get(i + 1) {
             let next_header_address = next_header.address();
-            match chain_header.link() {
-                Some(next_header_address) => Ok(()),
-                _ => Err(ZomeApiError::from(String::from("Bad chain header"))),
-            }?;
+            if let Some(header_address) = chain_header.link() {
+                if header_address == next_header_address {
+                    return Ok(());
+                }
+            }
+
+            return Err(ZomeApiError::from(String::from("Bad chain header")));
         }
     }
 

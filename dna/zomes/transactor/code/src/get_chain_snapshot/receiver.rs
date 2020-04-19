@@ -22,15 +22,15 @@ pub fn get_chain_snapshot(
     }
 
     match offer.state {
-        OfferState::Pending => {
+        OfferState::Pending | OfferState::Approved { .. } => {
             let transaction_snapshot = get_my_chain_snapshot()?;
 
             return Ok(OfferResponse::OfferPending(transaction_snapshot));
         }
-        OfferState::Completed {
-            attestation_address,
-        } => Ok(OfferResponse::OfferCompleted(attestation_address)),
         OfferState::Canceled => Ok(OfferResponse::OfferCanceled),
+        _ => Err(ZomeApiError::from(String::from(
+            "Offer is neither pending nor approved nor canceled: cannot get the chain_snapshot ",
+        ))),
     }
 }
 

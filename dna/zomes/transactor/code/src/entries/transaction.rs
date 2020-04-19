@@ -1,13 +1,13 @@
 use crate::utils;
-use holochain_entry_utils::HolochainEntry;
 use hdk::{
-    prelude::Entry,
     entry_definition::ValidatingEntryType,
     error::ZomeApiResult,
     holochain_core_types::{chain_header::ChainHeader, dna::entry_types::Sharing},
     holochain_json_api::{error::JsonError, json::JsonString},
     holochain_persistence_api::cas::content::Address,
+    prelude::Entry,
 };
+use holochain_entry_utils::HolochainEntry;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Transaction {
@@ -90,6 +90,21 @@ pub fn are_transactions_valid(
 /**
  * Filters the entries of the given source chain and returns only the transactions
  */
-pub fn get_transactions_from_chain_snapshot(chain_snapshot: Vec<(ChainHeader, Entry)>) -> Vec<Transaction> {
-    chain_snapshot.iter().filter_map(|(_, entry)| Transaction::from_entry(entry)).collect()
+pub fn get_transactions_from_chain_snapshot(
+    chain_snapshot: Vec<(ChainHeader, Entry)>,
+) -> Vec<Transaction> {
+    chain_snapshot
+        .iter()
+        .filter_map(|(_, entry)| Transaction::from_entry(entry))
+        .collect()
+}
+
+/**
+ * Returns the couterparty to the AGENT_ADDRESS for the given transaction
+ */
+pub fn get_counterparty(transaction: &Transaction) -> Address {
+    match hdk::AGENT_ADDRESS.clone() == transaction.creditor_address {
+        true => transaction.debtor_address.clone(),
+        false => transaction.creditor_address.clone(),
+    }
 }

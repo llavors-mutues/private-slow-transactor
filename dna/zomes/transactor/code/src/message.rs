@@ -1,7 +1,12 @@
-use crate::{
-    accept_offer, create_offer, get_chain_snapshot, get_chain_snapshot::ChainSnapshot, offer::Offer,
+use crate::complete_transaction::{
+    AcceptOfferRequest, CompleteTransactionRequest, CompleteTransactionResponse,
+    SignAttestationRequest,
 };
-use hdk::holochain_core_types::time::Timeout;
+use crate::{
+    complete_transaction, create_offer, entries::attestation::Attestation, get_chain_snapshot,
+    get_chain_snapshot::ChainSnapshot, offer::Offer,
+};
+use hdk::holochain_core_types::{chain_header::ChainHeader, signature::Signature, time::Timeout};
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::prelude::*;
 use std::convert::TryInto;
@@ -17,7 +22,6 @@ pub type OfferMessage<Req, Res> = Message<Req, OfferResponse<Res>>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum OfferResponse<Res> {
     OfferPending(Res),
-    OfferCompleted(Address), // Will contain the attestation address from which to be able to complete the transaction
     OfferCanceled,
 }
 
@@ -25,7 +29,9 @@ pub enum OfferResponse<Res> {
 pub enum MessageBody {
     SendOffer(Message<Offer, ()>),
     GetChainSnapshot(OfferMessage<Address, ChainSnapshot>),
-    AcceptOffer(OfferMessage<accept_offer::AcceptOfferRequest, ()>),
+    AcceptOffer(OfferMessage<AcceptOfferRequest, ()>),
+    CompleteTransaction(OfferMessage<CompleteTransactionRequest, CompleteTransactionResponse>),
+    SignAttestation(OfferMessage<SignAttestationRequest, Signature>),
 }
 
 /**
@@ -74,9 +80,26 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
                 )
                 .map(|result| MessageBody::GetChainSnapshot(OfferMessage::Response(result)))
             }
-            MessageBody::AcceptOffer(OfferMessage::Request(request)) => {
-                accept_offer::receiver::receive_accept_offer(sender_address, request)
-                    .map(|result| MessageBody::AcceptOffer(OfferMessage::Response(result)))
+            MessageBody::AcceptOffer(OfferMessage::Request(accept_offer_request)) => {
+                complete_transaction::receiver::receive_accept_offer(
+                    sender_address,
+                    accept_offer_request,
+                )
+                .map(|result| MessageBody::AcceptOffer(OfferMessage::Response(result)))
+            }
+            MessageBody::CompleteTransaction(OfferMessage::Request(
+                complete_transaction_request,
+            )) => complete_transaction::receiver::receive_complete_transaction(
+                sender_address,
+                complete_transaction_request.chain_header,
+            )
+            .map(|result| MessageBody::CompleteTransaction(OfferMessage::Response(result))),
+            MessageBody::SignAttestation(OfferMessage::Request(sign_attestation_request)) => {
+                complete_transaction::receiver::receive_sign_attestation_request(
+                    sender_address,
+                    sign_attestation_request,
+                )
+                .map(|result| MessageBody::SignAttestation(OfferMessage::Response(result)))
             }
             _ => Err(ZomeApiError::from(format!("Bad message type"))),
         },
