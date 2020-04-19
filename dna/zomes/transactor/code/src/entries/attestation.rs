@@ -3,6 +3,7 @@ use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
 use hdk::prelude::AddressableContent;
+use hdk::prelude::Entry;
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::{
@@ -61,14 +62,30 @@ pub fn entry_definition() -> ValidatingEntryType {
     )
 }
 
+/**
+ * Validate that the attestation is valid, fetching the header list and validating them
+ */
 pub fn validate_attestation(
     attestation: Attestation,
     _validation_data: ValidationData,
 ) -> Result<(), String> {
-    let chain_headers = attestation
+    let headers: Vec<Entry> = attestation
         .header_addresses
         .into_iter()
-        .map(|header_address| hdk::utils::get_as_type(header_address))
+        .map(|header_address| match hdk::get_entry(&header_address) {
+            Ok(Some(entry)) => Ok(entry),
+            _ => Err(ZomeApiError::from(String::from("Could not get header"))),
+        })
+        .collect::<ZomeApiResult<Vec<Entry>>>()?;
+
+    let chain_headers: Vec<ChainHeader> = headers
+        .iter()
+        .map(|h| match h {
+            Entry::ChainHeader(chain_header) => Ok(chain_header.clone()),
+            _ => Err(ZomeApiError::from(String::from(
+                "Could not transform header",
+            ))),
+        })
         .collect::<ZomeApiResult<Vec<ChainHeader>>>()?;
 
     validate_transaction_headers(&chain_headers)?;
