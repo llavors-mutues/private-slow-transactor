@@ -105,6 +105,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   result = await getCounterpartyBalance(transactionAddress)(bob);
   t.equal(result.Ok.balance, -10);
   t.equal(result.Ok.executable, true);
+  t.equal(result.Ok.valid, true);
 
   result = await acceptOffer(
     transactionAddress,
