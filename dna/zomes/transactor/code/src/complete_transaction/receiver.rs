@@ -254,7 +254,7 @@ pub fn handle_sign_attestation(
     let my_header = sign_attestation_request
         .chain_headers
         .iter()
-        .find(|h| h.provenances()[0].source() != AGENT_ADDRESS.clone())
+        .find(|h| h.provenances()[0].source() == AGENT_ADDRESS.clone())
         .ok_or(ZomeApiError::from(String::from(
             "Could not find my transaction header",
         )))?;
