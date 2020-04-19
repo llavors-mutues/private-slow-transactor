@@ -1,3 +1,4 @@
+use crate::offer;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
@@ -61,9 +62,17 @@ pub fn entry_definition() -> ValidatingEntryType {
 }
 
 pub fn validate_attestation(
-    _attestation: Attestation,
+    attestation: Attestation,
     _validation_data: ValidationData,
 ) -> Result<(), String> {
+    let chain_headers = attestation
+        .header_addresses
+        .into_iter()
+        .map(|header_address| hdk::utils::get_as_type(header_address))
+        .collect::<ZomeApiResult<Vec<ChainHeader>>>()?;
+
+    validate_transaction_headers(&chain_headers)?;
+
     Ok(())
 }
 
@@ -121,4 +130,45 @@ pub fn get_latest_attestation_for(
             "Could not get attestation when it should be ",
         ))),
     }
+}
+
+/**
+ * Validates that the given headers are consistent with their transaction and agents
+ */
+pub fn validate_transaction_headers(chain_headers: &Vec<ChainHeader>) -> ZomeApiResult<()> {
+    if chain_headers.len() != 2 {
+        return Err(ZomeApiError::from(format!(
+            "There are {:?} transaction headers, but only two should exist",
+            chain_headers.len()
+        )));
+    }
+
+    let transaction_address = chain_headers[0].entry_address();
+
+    if !chain_headers
+        .iter()
+        .all(|h| h.entry_address() == transaction_address)
+    {
+        return Err(ZomeApiError::from(format!(
+            "Transaction headers contain different entry addresses: {:?}",
+            chain_headers
+        )));
+    }
+    let offer = offer::query_offer(&transaction_address)?;
+
+    let agent_addresses: Vec<Address> = chain_headers
+        .iter()
+        .map(|h| h.provenances()[0].source())
+        .collect();
+
+    if !agent_addresses.contains(&offer.transaction.creditor_address)
+        || !agent_addresses.contains(&offer.transaction.debtor_address)
+    {
+        return Err(ZomeApiError::from(format!(
+            "A transaction header is missing for one of the parties: headers {:?}, transaction: {:?}",
+            chain_headers, offer.transaction
+        )));
+    }
+
+    Ok(())
 }

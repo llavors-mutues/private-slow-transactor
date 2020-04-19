@@ -1,9 +1,10 @@
-use super::common::{
-    validate_counterparty_header, validate_last_header_still_unchanged,
-    validate_transaction_headers,
-};
+use super::common::{validate_counterparty_header, validate_last_header_still_unchanged};
 use crate::{
-    attestation::Attestation, message::OfferResponse, offer, offer::OfferState, transaction,
+    attestation::{validate_transaction_headers, Attestation},
+    message::OfferResponse,
+    offer,
+    offer::OfferState,
+    transaction,
 };
 use hdk::{
     holochain_core_types::{chain_header::ChainHeader, signature::Signature},

@@ -1,4 +1,9 @@
-use crate::{attestation::Attestation, offer, transaction, transaction::Transaction, utils};
+use crate::{
+    attestation::{validate_transaction_headers, Attestation},
+    transaction,
+    transaction::Transaction,
+    utils,
+};
 use hdk::holochain_core_types::{chain_header::ChainHeader, signature::Signature};
 use hdk::prelude::*;
 use holochain_entry_utils::HolochainEntry;
@@ -13,47 +18,6 @@ pub fn validate_last_header_still_unchanged(last_header_address: Address) -> Zom
         true => Ok(()),
         false => Err(ZomeApiError::from(format!("Last header has changed"))),
     }
-}
-
-/**
- * Validates that the given headers are consistent with their transaction and agents
- */
-pub fn validate_transaction_headers(chain_headers: &Vec<ChainHeader>) -> ZomeApiResult<()> {
-    if chain_headers.len() != 2 {
-        return Err(ZomeApiError::from(format!(
-            "There are {:?} transaction headers, but only two should exist",
-            chain_headers.len()
-        )));
-    }
-
-    let transaction_address = chain_headers[0].entry_address();
-
-    if !chain_headers
-        .iter()
-        .all(|h| h.entry_address() == transaction_address)
-    {
-        return Err(ZomeApiError::from(format!(
-            "Transaction headers contain different entry addresses: {:?}",
-            chain_headers
-        )));
-    }
-    let offer = offer::query_offer(&transaction_address)?;
-
-    let agent_addresses: Vec<Address> = chain_headers
-        .iter()
-        .map(|h| h.provenances()[0].source())
-        .collect();
-
-    if !agent_addresses.contains(&offer.transaction.creditor_address)
-        || !agent_addresses.contains(&offer.transaction.debtor_address)
-    {
-        return Err(ZomeApiError::from(format!(
-            "A transaction header is missing for one of the parties: headers {:?}, transaction: {:?}",
-            chain_headers, offer.transaction
-        )));
-    }
-
-    Ok(())
 }
 
 /**
