@@ -25,7 +25,9 @@ pub fn create_offer(
 
     let offer = Offer {
         transaction: transaction.clone(),
-        state: OfferState::Pending,
+        state: OfferState::Approved {
+            approved_header_address: None,
+        },
     };
 
     let message_body = MessageBody::SendOffer(Message::Request(offer.clone()));

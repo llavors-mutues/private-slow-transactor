@@ -1,5 +1,8 @@
 use super::{
-    common::{create_attestation, validate_counterparty_header, validate_transaction_headers},
+    common::{
+        create_attestation, validate_counterparty_header, validate_last_header_still_unchanged,
+        validate_transaction_headers,
+    },
     AcceptOfferRequest, CompleteTransactionRequest, CompleteTransactionResponse,
     SignAttestationRequest,
 };
@@ -64,13 +67,9 @@ pub fn receive_accept_offer(
  */
 pub fn handle_accept_offer(
     accept_offer_request: AcceptOfferRequest,
-    approved_header_address: Option<Address>,
+    _approved_header_address: Option<Address>, // TODO: in the future, verify that creditor hasn't also committed anything new
 ) -> ZomeApiResult<()> {
-    if let Some(header_address) = approved_header_address {
-        if accept_offer_request.approved_header_address != header_address {
-            return Err(ZomeApiError::from(String::from("Header has moved since the offer was approved: it needs to be approved with the current header address")));
-        }
-    }
+    validate_last_header_still_unchanged(accept_offer_request.approved_header_address)?;
 
     let offer = offer::query_offer(&accept_offer_request.transaction_address)?;
     hdk::commit_entry(&offer.transaction.clone().entry())?;
@@ -243,13 +242,29 @@ pub fn receive_sign_attestation_request(
 /**
  * Assumes that the offer is still pending
  *
- * 1. Check that the counterparty's header is valid
- * 2. Check that the attestation is the
+ * 1. Check that my header has not moved
+ * 2. Check that the transaction headers are valid
+ * 3. Check that the counterparty's header is valid
+ * 4. Build and sign the attestation entry
  */
 pub fn handle_sign_attestation(
     sign_attestation_request: SignAttestationRequest,
     approved_header_address: Option<Address>,
 ) -> ZomeApiResult<Signature> {
+    let my_header = sign_attestation_request
+        .chain_headers
+        .iter()
+        .find(|h| h.provenances()[0].source() != AGENT_ADDRESS.clone())
+        .ok_or(ZomeApiError::from(String::from(
+            "Could not find my transaction header",
+        )))?;
+
+    let previous_header_address = my_header
+        .link()
+        .ok_or(ZomeApiError::from(String::from("Bad header")))?;
+
+    validate_last_header_still_unchanged(previous_header_address)?;
+
     validate_transaction_headers(&sign_attestation_request.chain_headers)?;
 
     let counterparty_header = sign_attestation_request
