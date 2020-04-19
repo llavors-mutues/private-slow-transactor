@@ -57,11 +57,11 @@ mod transactor {
 
     #[zome_fn("hc_public")]
     pub fn offer_credits(
-        receiver_address: Address,
+        creditor_address: Address,
         amount: f64,
         timestamp: usize,
     ) -> ZomeApiResult<Address> {
-        create_offer::sender::create_offer(receiver_address, amount, timestamp)
+        create_offer::sender::create_offer(creditor_address, amount, timestamp)
     }
 
     #[zome_fn("hc_public")]

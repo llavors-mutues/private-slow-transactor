@@ -12,30 +12,29 @@ use holochain_entry_utils::HolochainEntry;
  * Also send a direct message to the receiver notifying the offer
  */
 pub fn create_offer(
-    receiver_address: Address,
+    creditor_address: Address,
     amount: f64,
     timestamp: usize,
 ) -> ZomeApiResult<Address> {
     let transaction = Transaction {
         debtor_address: AGENT_ADDRESS.clone(),
-        creditor_address: receiver_address.clone(),
+        creditor_address: creditor_address.clone(),
         amount,
         timestamp,
     };
 
-    let offer = Offer {
-        transaction: transaction.clone(),
-        state: OfferState::Approved {
-            approved_header_address: None,
-        },
-    };
+    let message_body = MessageBody::SendOffer(Message::Request(transaction.clone()));
 
-    let message_body = MessageBody::SendOffer(Message::Request(offer.clone()));
-
-    let result = message::send_message(receiver_address, message_body)?;
+    let result = message::send_message(creditor_address, message_body)?;
 
     match result {
         MessageBody::SendOffer(Message::Response(())) => {
+            let offer = Offer {
+                transaction: transaction.clone(),
+                state: OfferState::Approved {
+                    approved_header_address: None,
+                },
+            };
             hdk::commit_entry(&offer.entry())?;
             Ok(transaction.address()?)
         }

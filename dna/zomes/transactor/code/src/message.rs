@@ -4,8 +4,8 @@ use crate::complete_transaction::{
     sign_attestation::SignAttestationRequest,
 };
 use crate::{
-    complete_transaction, create_offer, get_chain_snapshot, get_chain_snapshot::ChainSnapshot,
-    offer::Offer,
+    complete_transaction, create_offer, entries::transaction::Transaction, get_chain_snapshot,
+    get_chain_snapshot::ChainSnapshot,
 };
 use hdk::holochain_core_types::{signature::Signature, time::Timeout};
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
@@ -28,7 +28,7 @@ pub enum OfferResponse<Res> {
 
 #[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
 pub enum MessageBody {
-    SendOffer(Message<Offer, ()>),
+    SendOffer(Message<Transaction, ()>),
     GetChainSnapshot(OfferMessage<Address, ChainSnapshot>),
     AcceptOffer(OfferMessage<AcceptOfferRequest, ()>),
     CompleteTransaction(OfferMessage<CompleteTransactionRequest, CompleteTransactionResponse>),
@@ -70,8 +70,8 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
             err
         ))),
         Ok(message_body) => match message_body {
-            MessageBody::SendOffer(Message::Request(offer)) => {
-                create_offer::receiver::receive_offer(sender_address, offer)
+            MessageBody::SendOffer(Message::Request(transaction)) => {
+                create_offer::receiver::receive_offer(sender_address, transaction)
                     .map(|result| MessageBody::SendOffer(Message::Response(result)))
             }
             MessageBody::GetChainSnapshot(OfferMessage::Request(transaction_address)) => {

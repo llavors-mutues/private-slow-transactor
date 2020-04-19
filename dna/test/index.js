@@ -41,15 +41,15 @@ const orchestrator = new Orchestrator({
 function offerCredits(to, credits) {
   return caller =>
     caller.call("transactor", "transactor", "offer_credits", {
-      receiver_address: to,
+      creditor_address: to,
       amount: credits,
       timestamp: Math.floor(Date.now() / 1000)
     });
 }
 
-function getSenderBalance(transactionAddress) {
+function getCounterpartyBalance(transactionAddress) {
   return caller =>
-    caller.call("transactor", "transactor", "get_sender_balance", {
+    caller.call("transactor", "transactor", "get_counterparty_balance", {
       transaction_address: transactionAddress
     });
 }
@@ -77,7 +77,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
 
   let transactionAddress = result.Ok;
 
-  result = await getSenderBalance(result.Ok)(alice);
+  result = await getCounterpartyBalance(result.Ok)(alice);
   t.equal(result.Ok.sender_balance, 0);
   t.equal(result.Ok.executable, true);
 
@@ -94,7 +94,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
 
   transactionAddress = result.Ok;
 
-  result = await getSenderBalance(result.Ok)(bob);
+  result = await getCounterpartyBalance(result.Ok)(bob);
   t.equal(result.Ok.sender_balance, -10);
   t.equal(result.Ok.executable, true);
 
@@ -105,7 +105,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
 
   transactionAddress = result.Ok;
 
-  result = await getSenderBalance(result.Ok)(bob);
+  result = await getCounterpartyBalance(result.Ok)(bob);
   t.equal(result.Ok.sender_balance, 10);
   t.equal(result.Ok.executable, true);
 });
