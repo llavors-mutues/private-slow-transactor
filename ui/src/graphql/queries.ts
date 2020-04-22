@@ -1,13 +1,13 @@
 import gql from 'graphql-tag';
 
-export const GET_MY_TRANSACTION = gql`
-  query GetMyTransactions() {
+export const GET_MY_TRANSACTIONS = gql`
+  query GetMyTransactions {
     myTransactions {
       id
-      sender {
+      debtor {
         id
       }
-      receiver {
+      creditor {
         id
       }
       amount

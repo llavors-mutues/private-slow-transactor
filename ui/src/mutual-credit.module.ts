@@ -1,20 +1,16 @@
 import { interfaces } from 'inversify';
-import { GraphQlSchemaModule } from '@uprtcl/common';
-import {
-  ElementsModule,
-  MicroModule,
-  i18nextModule
-} from '@uprtcl/micro-orchestrator';
+import { GraphQlSchemaModule } from '@uprtcl/graphql';
+import { MicroModule, i18nextModule } from '@uprtcl/micro-orchestrator';
 import {
   HolochainConnectionModule,
-  createHolochainProvider
-} from '@uprtcl/connections';
+  createHolochainProvider,
+} from '@uprtcl/holochain-provider';
 
-import { MyTransactions } from './elements/mutual-credit-my-transactions';
+import { MyTransactions } from './elements/hcmc-my-transactions';
 
 import en from './i18n/en.json';
 import { mutualCreditTypeDefs } from './graphql/schema';
-import { MutualCreditBindings } from './types';
+import { MutualCreditBindings } from './bindings';
 import { resolvers } from './graphql/resolvers';
 
 export class MutualCreditModule extends MicroModule {
@@ -35,15 +31,16 @@ export class MutualCreditModule extends MicroModule {
     );
 
     container
-      .bind(MutualCreditTypes.MutualCreditProvider)
+      .bind(MutualCreditBindings.MutualCreditProvider)
       .to(mutualCreditProvider);
+
+    customElements.define('hcmc-my-transactions', MyTransactions);
   }
 
-  submodules = [
-    new GraphQlSchemaModule(mutualCreditTypeDefs, resolvers),
-    new i18nextModule('mutual-credit', { en: en }),
-    new ElementsModule({
-      'mutual-credit-my-transaction': MyTransactions
-    })
-  ];
+  get submodules() {
+    return [
+      new GraphQlSchemaModule(mutualCreditTypeDefs, resolvers),
+      new i18nextModule('mutual-credit', { en: en }),
+    ];
+  }
 }

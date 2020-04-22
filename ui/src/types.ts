@@ -1,12 +1,12 @@
-export const MutualCreditBindings = {
-  MutualCreditProvider: Symbol("mutual-credit-provider")
-};
+export interface Agent {
+  id: string;
+}
 
 export interface Transaction {
   id: string;
 
-  sender: string;
-  receiver: string;
+  debtor: Agent;
+  creditor: Agent;
   amount: Number;
   timestamp: Number;
 }

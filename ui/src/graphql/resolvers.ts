@@ -1,33 +1,56 @@
-import { HolochainProvider } from '@uprtcl/connections';
+import { HolochainProvider } from '@uprtcl/holochain-provider';
 
-import { MutualCreditTypes } from '../types';
+import { MutualCreditBindings } from '../bindings';
 
 export const resolvers = {
   Transaction: {
     id(parent) {
       return parent;
-    }
+    },
   },
   Query: {
     async myTransactions(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
-        MutualCreditTypes.MutualCreditProvider
+        MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('get_my_transactions', {});
-    }
+      return mutualCreditProvider.call('get_completed_transactions', {});
+    },
+    async myOffers(_, __, { container }) {
+      const mutualCreditProvider: HolochainProvider = container.get(
+        MutualCreditBindings.MutualCreditProvider
+      );
+
+      return mutualCreditProvider.call('get_my_offers', {});
+    },
+    async myBalance(_, __, { container }) {
+      const mutualCreditProvider: HolochainProvider = container.get(
+        MutualCreditBindings.MutualCreditProvider
+      );
+
+      return mutualCreditProvider.call('get_my_balance', {});
+    },
   },
   Mutation: {
-    async sendAmount(_, { receiverId, amount }, { container }) {
+    async offerCredits(_, { creditorId, amount }, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
-        MutualCreditTypes.MutualCreditProvider
+        MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('send_amount', {
-        receiver_address: receiverId,
+      return mutualCreditProvider.call('offer_credits', {
+        creditor_address: creditorId,
         amount,
-        timestamp: Math.floor(Date.now() / 1000)
+        timestamp: Math.floor(Date.now() / 1000),
       });
-    }
-  }
+    },
+    async acceptOffer(_, { transactionId }, { container }) {
+      const mutualCreditProvider: HolochainProvider = container.get(
+        MutualCreditBindings.MutualCreditProvider
+      );
+
+      return mutualCreditProvider.call('accept_offer', {
+        transaction_address: transactionId
+      });
+    },
+  },
 };

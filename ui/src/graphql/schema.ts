@@ -7,20 +7,38 @@ export const mutualCreditTypeDefs = gql`
     id: ID!
   }
 
-  type Transaction implements Entity {
+  enum TransactionState {
+    RECEIVED
+    PENDING
+    DECLINED
+    APPROVED
+    COMPLETED
+  }
+
+  type Transaction {
     id: ID!
 
-    sender: Agent!
-    receiver: Agent!
+    debtor: Agent!
+    creditor: Agent!
     amount: Int!
     timestamp: Date!
+
+    executable: Boolean!
+    counterpartyBalance: Float!
+    valid: Boolean!
+
+    state: TransactionState!
   }
 
   extend type Query {
     myTransactions: [Transaction!]!
+    myOffers: [Transaction!]!
+    myBalance: Float!
   }
 
   extend type Mutation {
-    sendAmount(receiverId: ID!, amount: Int!): BadgeClass!
+    offerCredits(creditorId: ID!, amount: Float!): Transaction!
+    declineOffer(transactionId: ID!): ID!
+    acceptOffer(transactionId: ID!): ID!
   }
 `;
