@@ -14,30 +14,30 @@ export const resolvers = {
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('get_completed_transactions', {});
+      return mutualCreditProvider.call('query_my_transactions', {});
     },
     async myOffers(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('get_my_offers', {});
+      return mutualCreditProvider.call('query_my_offers', {});
     },
     async myBalance(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('get_my_balance', {});
+      return mutualCreditProvider.call('query_my_balance', {});
     },
   },
   Mutation: {
-    async offerCredits(_, { creditorId, amount }, { container }) {
+    async createOffer(_, { creditorId, amount }, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('offer_credits', {
+      return mutualCreditProvider.call('create_offer', {
         creditor_address: creditorId,
         amount,
         timestamp: Math.floor(Date.now() / 1000),

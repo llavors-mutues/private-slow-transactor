@@ -1,5 +1,6 @@
 const path = require('path');
 const { createDefaultConfig } = require('@open-wc/building-webpack');
+const webpack = require('webpack');
 
 // if you need to support IE11 use "modern-and-legacy-config" instead.
 // const { createCompatibilityConfig } = require('@open-wc/building-webpack');
@@ -7,6 +8,17 @@ const { createDefaultConfig } = require('@open-wc/building-webpack');
 //   input: path.resolve(__dirname, './index.html'),
 // });
 
-module.exports = createDefaultConfig({
+const config = createDefaultConfig({
   input: path.resolve(__dirname, './index.html'),
+  mode: 'development',
 });
+
+module.exports = {
+  ...config,
+  plugins: [
+    ...config.plugins,
+    new webpack.EnvironmentPlugin({
+      HOST: process.env.HOST,
+    }),
+  ],
+};

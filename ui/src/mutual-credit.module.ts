@@ -6,12 +6,13 @@ import {
   createHolochainProvider,
 } from '@uprtcl/holochain-provider';
 
-import { MyTransactions } from './elements/hcmc-my-transactions';
+import { TransactionList } from './elements/hcmc-transaction-list';
 
 import en from './i18n/en.json';
 import { mutualCreditTypeDefs } from './graphql/schema';
 import { MutualCreditBindings } from './bindings';
 import { resolvers } from './graphql/resolvers';
+import { CreateOffer } from './elements/hcmc-create-offer';
 
 export class MutualCreditModule extends MicroModule {
   static id = Symbol('mutual-credit-module');
@@ -34,7 +35,8 @@ export class MutualCreditModule extends MicroModule {
       .bind(MutualCreditBindings.MutualCreditProvider)
       .to(mutualCreditProvider);
 
-    customElements.define('hcmc-my-transactions', MyTransactions);
+    customElements.define('hcmc-transaction-list', TransactionList);
+    customElements.define('hcmc-create-offer', CreateOffer);
   }
 
   get submodules() {

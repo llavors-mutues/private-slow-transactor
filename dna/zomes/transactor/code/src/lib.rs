@@ -56,7 +56,7 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn offer_credits(
+    pub fn create_offer(
         creditor_address: Address,
         amount: f64,
         timestamp: usize,
@@ -78,7 +78,7 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_completed_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
+    pub fn query_my_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
         transaction::get_my_completed_transactions()
     }
 

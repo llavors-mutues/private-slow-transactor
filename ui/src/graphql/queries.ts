@@ -15,3 +15,11 @@ export const GET_MY_TRANSACTIONS = gql`
     }
   }
 `;
+
+export const CREATE_OFFER = gql`
+  mutation CreateOffer($creditorId: ID!, $amount: Float!) {
+    createOffer(creditorId: $creditorId, amount: $amount) {
+      id
+    }
+  }
+`;
