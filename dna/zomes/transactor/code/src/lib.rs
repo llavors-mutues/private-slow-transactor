@@ -25,7 +25,7 @@ pub mod get_chain_snapshot;
 pub mod message;
 pub mod utils;
 
-use get_chain_snapshot::BalanceSnapshot;
+use get_chain_snapshot::CounterpartySnapshot;
 
 #[zome]
 mod transactor {
@@ -65,10 +65,10 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_counterparty_balance(
+    pub fn get_counterparty_snapshot(
         transaction_address: Address,
-    ) -> ZomeApiResult<BalanceSnapshot> {
-        get_chain_snapshot::sender::get_counterparty_balance(transaction_address)
+    ) -> ZomeApiResult<CounterpartySnapshot> {
+        get_chain_snapshot::sender::get_counterparty_snapshot(transaction_address)
     }
 
     #[zome_fn("hc_public")]

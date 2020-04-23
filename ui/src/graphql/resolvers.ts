@@ -3,10 +3,14 @@ import { HolochainProvider } from '@uprtcl/holochain-provider';
 import { MutualCreditBindings } from '../bindings';
 
 function offerToTransaction(id, offer) {
+  const state = offer.state;
   return {
     id,
-    ...offer.transaction,
-    state: offer.state,
+    transaction: {
+      id,
+      ...offer.transaction,
+    },
+    state: typeof state === 'object' ? Object.keys(state)[0] : state,
   };
 }
 
@@ -24,8 +28,19 @@ export const resolvers = {
       return parent;
     },
   },
+  Offer: {
+    async counterpartySnapshot(parent, _, { container }) {
+      const mutualCreditProvider: HolochainProvider = container.get(
+        MutualCreditBindings.MutualCreditProvider
+      );
+
+      return mutualCreditProvider.call('get_counterparty_snapshot', {
+        transaction_address: parent.id,
+      });
+    },
+  },
   Query: {
-    async transaction(_, { transactionId }, { container }) {
+    async offer(_, { transactionId }, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );

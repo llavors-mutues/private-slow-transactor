@@ -8,6 +8,7 @@ import {
   HolochainConnectionModule,
   HolochainConnection,
 } from '@uprtcl/holochain-provider';
+import { DemoApp } from './app';
 
 (async function () {
   const connection = new HolochainConnection({
@@ -25,4 +26,6 @@ import {
     hcConnectionModule,
     mutualCredit,
   ]);
+
+  customElements.define('demo-app', DemoApp);
 })();

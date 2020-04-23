@@ -1,4 +1,4 @@
-use super::{BalanceSnapshot, ChainSnapshot};
+use super::{CounterpartySnapshot, ChainSnapshot};
 use crate::{
     attestation,
     message::{send_message, MessageBody, OfferMessage, OfferResponse},
@@ -15,7 +15,7 @@ use holochain_entry_utils::HolochainEntry;
  * Get the balance snapshot from the sender of the transaction
  * Then it returns offer balance, whether it's executable, and the last_header_address of the chain of that agent
  */
-pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<BalanceSnapshot> {
+pub fn get_counterparty_snapshot(transaction_address: Address) -> ZomeApiResult<CounterpartySnapshot> {
     let offer = offer::query_offer(&transaction_address)?;
 
     match offer.state {
@@ -47,7 +47,7 @@ pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<B
     let executable =
         transaction::are_transactions_valid(&offer.transaction.debtor_address, &transactions)?;
 
-    Ok(BalanceSnapshot {
+    Ok(CounterpartySnapshot {
         balance,
         executable,
         valid,

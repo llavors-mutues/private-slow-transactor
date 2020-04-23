@@ -20,22 +20,53 @@ export const GET_PENDING_OFFERS = gql`
   query GetPendingOffers {
     myOffers {
       id
-      debtor {
+      transaction {
         id
+        debtor {
+          id
+        }
+        creditor {
+          id
+        }
+        amount
+        timestamp
       }
-      creditor {
-        id
-      }
-      amount
-      timestamp
+      state
     }
   }
 `;
 
+export const GET_OFFER_DETAIL = gql`
+  query GetOfferDetail($transactionId: String!) {
+    offer(transactionId: $transactionId) {
+      id
+      transaction {
+        id
+        debtor {
+          id
+        }
+        creditor {
+          id
+        }
+        amount
+        timestamp
+      }
+
+      counterpartySnapshot {
+        executable
+        valid
+        balance
+      }
+
+      state
+
+    }
+  }
+
+`
+
 export const CREATE_OFFER = gql`
   mutation CreateOffer($creditorId: ID!, $amount: Float!) {
-    createOffer(creditorId: $creditorId, amount: $amount) {
-      id
-    }
+    createOffer(creditorId: $creditorId, amount: $amount)
   }
 `;

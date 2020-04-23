@@ -7,7 +7,7 @@ pub mod receiver;
 pub mod sender;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
-pub struct BalanceSnapshot {
+pub struct CounterpartySnapshot {
     balance: f64,
     valid: bool,
     executable: bool,

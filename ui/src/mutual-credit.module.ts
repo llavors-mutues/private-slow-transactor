@@ -14,6 +14,7 @@ import en from './i18n/en.json';
 import { mutualCreditTypeDefs } from './graphql/schema';
 import { MutualCreditBindings } from './bindings';
 import { resolvers } from './graphql/resolvers';
+import { OfferDetail } from './elements/hcmc-offer-detail';
 
 export class MutualCreditModule extends MicroModule {
   static id = Symbol('mutual-credit-module');
@@ -39,6 +40,7 @@ export class MutualCreditModule extends MicroModule {
     customElements.define('hcmc-transaction-list', TransactionList);
     customElements.define('hcmc-create-offer', CreateOffer);
     customElements.define('hcmc-pending-offer-list', PendingOfferList);
+    customElements.define('hcmc-offer-detail', OfferDetail);
   }
 
   get submodules() {

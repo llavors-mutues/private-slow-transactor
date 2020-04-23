@@ -7,14 +7,14 @@ import '@material/mwc-list';
 import '@authentic/mwc-circular-progress';
 
 import { GET_PENDING_OFFERS } from '../graphql/queries';
-import { Transaction } from 'src/types';
+import { Transaction, Offer } from 'src/types';
 import { sharedStyles } from './sharedStyles';
 
 export class PendingOfferList extends moduleConnect(LitElement) {
   client!: ApolloClient<any>;
 
   @property({ type: Object, attribute: false })
-  offers!: Transaction[];
+  offers!: Offer[];
 
   static get styles() {
     return sharedStyles;
@@ -31,6 +31,14 @@ export class PendingOfferList extends moduleConnect(LitElement) {
     this.offers = result.data.myOffers;
   }
 
+  offerSelected(transactionId: string) {
+    this.dispatchEvent(
+      new CustomEvent('offer-selected', {
+        detail: { transactionId, composed: true, bubbles: true },
+      })
+    );
+  }
+
   render() {
     if (!this.offers)
       return html`<mwc-circular-progress></mwc-circular-progress>`;
@@ -39,13 +47,14 @@ export class PendingOfferList extends moduleConnect(LitElement) {
       <mwc-list>
         ${this.offers.map(
           (offer) => html`
-            <mwc-list-item>
+            <mwc-list-item @click=${() => this.offerSelected(offer.id)}>
               <div class="column">
                 <span>
-                  ${offer.debtor.id} => ${offer.creditor.id}
+                  ${offer.transaction.debtor.id} =>
+                  ${offer.transaction.creditor.id}
                 </span>
                 <span>
-                  ${offer.amount}
+                  ${offer.transaction.amount}
                 </span>
               </div>
             </mwc-list-item>
