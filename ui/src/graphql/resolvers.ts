@@ -2,6 +2,14 @@ import { HolochainProvider } from '@uprtcl/holochain-provider';
 
 import { MutualCreditBindings } from '../bindings';
 
+function offerToTransaction(id, offer) {
+  return {
+    id,
+    ...offer.transaction,
+    state: offer.state,
+  };
+}
+
 export const resolvers = {
   Transaction: {
     creditor(parent) {
@@ -17,6 +25,16 @@ export const resolvers = {
     },
   },
   Query: {
+    async transaction(_, { transactionId }, { container }) {
+      const mutualCreditProvider: HolochainProvider = container.get(
+        MutualCreditBindings.MutualCreditProvider
+      );
+
+      const offer = await mutualCreditProvider.call('query_offer', {
+        transaction_address: transactionId,
+      });
+      return offerToTransaction(transactionId, offer);
+    },
     async myTransactions(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
@@ -31,11 +49,7 @@ export const resolvers = {
 
       const offers = await mutualCreditProvider.call('query_my_offers', {});
       console.log(offers);
-      return offers.map((offer) => ({
-        id: offer[0],
-        ...offer[1].transaction,
-        state: offer[1].state,
-      }));
+      return offers.map((offer) => offerToTransaction(offer[0], offer[1]));
     },
     async myBalance(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(

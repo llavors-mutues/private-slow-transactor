@@ -12,7 +12,7 @@ test_agent = true
 
 [[dnas]]
 file = '/home/guillem/projects/holochain/open-dev/mutual-credit/dna/dist/dna.dna.json'
-hash = 'QmR6ASDSvqJotWfTZur6mpkrbW4Pnfdn9gNA6XqyDbMmgT'
+hash = 'QmWawBMVV9bQEjyJiwAxKQskUxTZRXNRSt3i6kus3Bt3oy'
 id = 'hc-run-dna'
 
 [[instances]]

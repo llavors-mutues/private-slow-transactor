@@ -34,6 +34,7 @@ export const mutualCreditTypeDefs = gql`
     myTransactions: [Transaction!]!
     myOffers: [Transaction!]!
     myBalance: Float!
+    transaction(transactionId: ID!): Transaction!
   }
 
   extend type Mutation {

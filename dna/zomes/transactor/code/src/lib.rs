@@ -88,6 +88,11 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
+    pub fn query_offer(transaction_address: Address) -> ZomeApiResult<offer::Offer> {
+        offer::query_offer(&transaction_address)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn query_my_offers() -> ZomeApiResult<Vec<(Address, offer::Offer)>> {
         offer::query_my_offers()
     }

@@ -8,12 +8,17 @@ import '@authentic/mwc-circular-progress';
 
 import { GET_PENDING_OFFERS } from '../graphql/queries';
 import { Transaction } from 'src/types';
+import { sharedStyles } from './sharedStyles';
 
 export class PendingOfferList extends moduleConnect(LitElement) {
   client!: ApolloClient<any>;
 
   @property({ type: Object, attribute: false })
   offers!: Transaction[];
+
+  static get styles() {
+    return sharedStyles;
+  }
 
   async firstUpdated() {
     this.client = this.request(ApolloClientModule.bindings.Client);
