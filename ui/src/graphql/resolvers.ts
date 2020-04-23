@@ -4,6 +4,14 @@ import { MutualCreditBindings } from '../bindings';
 
 export const resolvers = {
   Transaction: {
+    creditor(parent) {
+      return parent.creditor_address;
+    },
+    debtor(parent) {
+      return parent.debtor_address;
+    },
+  },
+  Agent: {
     id(parent) {
       return parent;
     },
@@ -21,7 +29,13 @@ export const resolvers = {
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('query_my_offers', {});
+      const offers = await mutualCreditProvider.call('query_my_offers', {});
+      console.log(offers);
+      return offers.map((offer) => ({
+        id: offer[0],
+        ...offer[1].transaction,
+        state: offer[1].state,
+      }));
     },
     async myBalance(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
@@ -49,7 +63,7 @@ export const resolvers = {
       );
 
       return mutualCreditProvider.call('accept_offer', {
-        transaction_address: transactionId
+        transaction_address: transactionId,
       });
     },
   },

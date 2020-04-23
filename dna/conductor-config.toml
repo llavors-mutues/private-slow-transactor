@@ -5,14 +5,14 @@ ui_interfaces = []
 
 [[agents]]
 id = 'hc-run-agent'
-keystore_file = 'alice'
-name = 'alice'
-public_address = 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
+keystore_file = 'bob'
+name = 'bob'
+public_address = 'HcScj5GbxXdTq69sfnz3jcA4u5f35zftsuu5Eb3dBxHjgd9byUUW6JmN3Bvzqqr'
 test_agent = true
 
 [[dnas]]
 file = '/home/guillem/projects/holochain/open-dev/mutual-credit/dna/dist/dna.dna.json'
-hash = 'QmXYkhuEBEjCL2UqWHbxAYXdYgMzDFuvinCy2zydPiNrLY'
+hash = 'QmR6ASDSvqJotWfTZur6mpkrbW4Pnfdn9gNA6XqyDbMmgT'
 id = 'hc-run-dna'
 
 [[instances]]
@@ -31,7 +31,7 @@ id = 'websocket-interface'
 id = 'test-instance'
 
 [interfaces.driver]
-port = 8888
+port = 8889
 type = 'websocket'
 
 [logger]

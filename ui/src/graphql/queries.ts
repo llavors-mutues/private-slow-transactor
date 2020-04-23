@@ -16,6 +16,22 @@ export const GET_MY_TRANSACTIONS = gql`
   }
 `;
 
+export const GET_PENDING_OFFERS = gql`
+  query GetPendingOffers {
+    myOffers {
+      id
+      debtor {
+        id
+      }
+      creditor {
+        id
+      }
+      amount
+      timestamp
+    }
+  }
+`;
+
 export const CREATE_OFFER = gql`
   mutation CreateOffer($creditorId: ID!, $amount: Float!) {
     createOffer(creditorId: $creditorId, amount: $amount) {

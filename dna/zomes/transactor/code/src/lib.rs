@@ -65,7 +65,9 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<BalanceSnapshot> {
+    pub fn get_counterparty_balance(
+        transaction_address: Address,
+    ) -> ZomeApiResult<BalanceSnapshot> {
         get_chain_snapshot::sender::get_counterparty_balance(transaction_address)
     }
 
@@ -74,12 +76,20 @@ mod transactor {
         transaction_address: Address,
         approved_header_address: Address,
     ) -> ZomeApiResult<()> {
-        complete_transaction::accept_offer::send_accept_offer(transaction_address, approved_header_address)
+        complete_transaction::accept_offer::send_accept_offer(
+            transaction_address,
+            approved_header_address,
+        )
     }
 
     #[zome_fn("hc_public")]
     pub fn query_my_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
         transaction::get_my_completed_transactions()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn query_my_offers() -> ZomeApiResult<Vec<(Address, offer::Offer)>> {
+        offer::query_my_offers()
     }
 
     #[receive]

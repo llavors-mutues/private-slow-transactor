@@ -1,6 +1,5 @@
 use crate::transaction::Transaction;
 use crate::utils;
-use holochain_entry_utils::HolochainEntry;
 use hdk::entry_definition::ValidatingEntryType;
 use hdk::holochain_core_types::chain_header::ChainHeader;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
@@ -9,15 +8,19 @@ use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::dna::entry_types::Sharing,
 };
+use holochain_entry_utils::HolochainEntry;
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub enum OfferState {
     Pending,
     Canceled,
     Approved {
-        approved_header_address: Option<Address>
+        approved_header_address: Option<Address>,
     },
-    Completed { attestation_address: Address },
+    Completed {
+        attestation_address: Address,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
@@ -44,6 +47,24 @@ pub fn entry_definition() -> ValidatingEntryType {
             Ok(())
         }
     )
+}
+
+/**
+ * Query all offers present in our source chain, getting only the last offer for each transaction to maintain state consistency
+ */
+pub fn query_my_offers() -> ZomeApiResult<Vec<(Address, Offer)>> {
+    let offers: Vec<(ChainHeader, Offer)> = utils::query_all_into()?;
+
+    let mut transaction_map: HashMap<Address, Offer> = HashMap::new();
+
+    for offer in offers {
+        let transaction_address = offer.1.transaction.address()?;
+        if !transaction_map.contains_key(&transaction_address) {
+            transaction_map.insert(transaction_address, offer.1);
+        }
+    }
+
+    Ok(transaction_map.into_iter().collect())
 }
 
 /**

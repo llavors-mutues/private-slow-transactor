@@ -20,7 +20,7 @@ export const mutualCreditTypeDefs = gql`
 
     debtor: Agent!
     creditor: Agent!
-    amount: Int!
+    amount: Float!
     timestamp: Date!
 
     executable: Boolean!
@@ -37,7 +37,7 @@ export const mutualCreditTypeDefs = gql`
   }
 
   extend type Mutation {
-    createOffer(creditorId: ID!, amount: Float!): Transaction!
+    createOffer(creditorId: ID!, amount: Float!): ID!
     declineOffer(transactionId: ID!): ID!
     acceptOffer(transactionId: ID!): ID!
   }
