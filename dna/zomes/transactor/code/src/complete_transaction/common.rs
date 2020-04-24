@@ -1,5 +1,5 @@
 use crate::{
-    attestation::{validate_transaction_headers, Attestation},
+    attestation::{validate_transaction_headers_against_local_offer, Attestation},
     offer, transaction,
     transaction::Transaction,
     utils,
@@ -27,7 +27,7 @@ pub fn create_attestation(
     chain_headers: &Vec<ChainHeader>,
     _counterparty_signature: &Signature,
 ) -> ZomeApiResult<Address> {
-    validate_transaction_headers(&chain_headers)?;
+    validate_transaction_headers_against_local_offer(&chain_headers)?;
 
     let attestation = Attestation::from_headers(chain_headers);
     let attestation_address = hdk::commit_entry(&attestation.entry())?;

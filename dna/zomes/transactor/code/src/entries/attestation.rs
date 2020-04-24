@@ -18,6 +18,7 @@ use holochain_entry_utils::HolochainEntry;
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksOptions, LinksResult, LinksStatusRequestKind,
 };
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Attestation {
@@ -182,7 +183,11 @@ pub fn get_latest_attestation_for(
 }
 
 /**
- * Validates that the given headers are consistent with their transaction and agents
+ * Validates that the given headers are valid, returning error if:
+ *
+ * - The number of headers is equal to 2
+ * - The headers do not contain the same entry address
+ * - There are two headers with the same agent_address
  */
 pub fn validate_transaction_headers(chain_headers: &Vec<ChainHeader>) -> ZomeApiResult<()> {
     if chain_headers.len() != 2 {
@@ -203,6 +208,33 @@ pub fn validate_transaction_headers(chain_headers: &Vec<ChainHeader>) -> ZomeApi
             chain_headers
         )));
     }
+
+    let mut headers_by_agent: HashMap<Address, ChainHeader> = HashMap::new();
+
+    for header in chain_headers.iter() {
+        let agent_address = header.provenances()[0].source();
+        if headers_by_agent.contains_key(&agent_address) {
+            return Err(ZomeApiError::from(String::from(
+                "Attestation contains two headers authored by the same agent",
+            )));
+        }
+
+        headers_by_agent.insert(agent_address, header.clone());
+    }
+
+    Ok(())
+}
+
+/**
+ * Validates the transaction headers against the local offer before committing them
+ */
+pub fn validate_transaction_headers_against_local_offer(
+    chain_headers: &Vec<ChainHeader>,
+) -> ZomeApiResult<()> {
+    validate_transaction_headers(chain_headers)?;
+
+    let transaction_address = chain_headers[0].entry_address();
+
     let offer = offer::query_offer(&transaction_address)?;
 
     let agent_addresses: Vec<Address> = chain_headers

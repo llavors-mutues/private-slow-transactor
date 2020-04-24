@@ -1,6 +1,6 @@
 use super::common::{validate_counterparty_header, validate_last_header_still_unchanged};
 use crate::{
-    attestation::{validate_transaction_headers, Attestation},
+    attestation::{validate_transaction_headers_against_local_offer, Attestation},
     message::OfferResponse,
     offer,
     offer::OfferState,
@@ -79,7 +79,7 @@ pub fn handle_sign_attestation(
 
     validate_last_header_still_unchanged(header_address)?;
 
-    validate_transaction_headers(&sign_attestation_request.chain_headers)?;
+    validate_transaction_headers_against_local_offer(&sign_attestation_request.chain_headers)?;
 
     let counterparty_header = sign_attestation_request
         .chain_headers

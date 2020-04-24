@@ -16,6 +16,12 @@ pub fn create_offer(
     amount: f64,
     timestamp: usize,
 ) -> ZomeApiResult<Address> {
+    if creditor_address == AGENT_ADDRESS.clone() {
+        return Err(ZomeApiError::from(String::from(
+            "Cannot create an offer to myself",
+        )));
+    }
+
     let transaction = Transaction {
         debtor_address: AGENT_ADDRESS.clone(),
         creditor_address: creditor_address.clone(),
