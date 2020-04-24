@@ -4,7 +4,9 @@
   "description": "MicroModule that implements mutual-credit on holochain",
   "scripts": {
     "clean": "rimraf dist",
-    "dev": "concurrently \"rollup -w -c rollup.config.ts\" \"cd demo && npm start\"",
+    "start": "concurrently \"npm run start:ui\" \"npm run start:hc\"",
+    "start:ui": "concurrently \"rollup -w -c rollup.config.ts\" \"cd demo && npm start\"",
+    "start:hc": "cd ../dna && concurrently \"sim2h_server\" \"hc run -a alice --networked Sim2h\" \"hc run -a bob --networked Sim2h -p 8889\"",
     "build": "npm run clean && rollup -c rollup.config.ts",
     "test": "karma start --coverage",
     "test:watch": "karma start --auto-watch=true --single-run=false"
@@ -20,6 +22,7 @@
     "@material/mwc-radio": "^0.14.1",
     "@material/mwc-ripple": "^0.14.1",
     "@material/mwc-switch": "^0.14.1",
+    "@material/mwc-textfield": "^0.14.1",
     "@material/mwc-top-app-bar": "^0.14.1",
     "@uprtcl/graphql": "^0.0.7-alpha.2",
     "@uprtcl/holochain-provider": "^0.0.7-alpha.2",

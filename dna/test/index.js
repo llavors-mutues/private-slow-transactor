@@ -40,7 +40,7 @@ const orchestrator = new Orchestrator({
 
 function offerCredits(to, credits) {
   return (caller) =>
-    caller.call("transactor", "transactor", "offer_credits", {
+    caller.call("transactor", "transactor", "create_offer", {
       creditor_address: to,
       amount: credits,
       timestamp: Math.floor(Date.now() / 1000),

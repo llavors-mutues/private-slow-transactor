@@ -8,9 +8,12 @@ import {
   HolochainConnectionModule,
   HolochainConnection,
 } from '@uprtcl/holochain-provider';
-console.log('hihi');
+import { DemoApp } from './app';
+
 (async function () {
-  const connection = new HolochainConnection({ host: 'ws://localhost:8888' });
+  const connection = new HolochainConnection({
+    host: `ws://localhost:${process.env.HOST}`,
+  });
 
   const hcConnectionModule = new HolochainConnectionModule(connection);
 
@@ -23,4 +26,6 @@ console.log('hihi');
     hcConnectionModule,
     mutualCredit,
   ]);
+
+  customElements.define('demo-app', DemoApp);
 })();

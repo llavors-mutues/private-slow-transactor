@@ -5,14 +5,14 @@ ui_interfaces = []
 
 [[agents]]
 id = 'hc-run-agent'
-keystore_file = 'testAgent'
-name = 'testAgent'
-public_address = 'HcScjN8wBwrn3tuyg89aab3a69xsIgdzmX5P9537BqQZ5A7TEZu7qCY4Xzzjhma'
+keystore_file = 'alice'
+name = 'alice'
+public_address = 'HcScjwO9ji9633ZYxa6IYubHJHW6ctfoufv5eq4F7ZOxay8wR76FP4xeG9pY3ui'
 test_agent = true
 
 [[dnas]]
-file = '/home/guillem/projects/holochain/hc-mutual-credit/dist/hc-mutual-credit.dna.json'
-hash = 'QmVXX7RCQNLL1fuun9awtiC4K6zNZcv2G2GoEz9Ao1dSYf'
+file = '/home/guillem/projects/holochain/open-dev/mutual-credit/dna/dist/dna.dna.json'
+hash = 'QmdXD3XA5ukaqnfbQrCdBACqUfRPqTvDuqNEKMidUBLk9w'
 id = 'hc-run-dna'
 
 [[instances]]
@@ -40,6 +40,10 @@ type = 'debug'
 
 [logger.rules]
 rules = []
+
+[network]
+sim2h_url = 'ws://localhost:9000'
+type = 'sim2h'
 
 [passphrase_service]
 type = 'cmd'

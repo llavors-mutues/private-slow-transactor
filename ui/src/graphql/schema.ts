@@ -7,12 +7,12 @@ export const mutualCreditTypeDefs = gql`
     id: ID!
   }
 
-  enum TransactionState {
-    RECEIVED
-    PENDING
-    DECLINED
-    APPROVED
-    COMPLETED
+  enum OfferState {
+    Received
+    Pending
+    Declined
+    Approved
+    Completed
   }
 
   type Transaction {
@@ -20,25 +20,37 @@ export const mutualCreditTypeDefs = gql`
 
     debtor: Agent!
     creditor: Agent!
-    amount: Int!
+    amount: Float!
     timestamp: Date!
+  }
 
+  type CounterpartySnapshot {
     executable: Boolean!
-    counterpartyBalance: Float!
+    balance: Float!
     valid: Boolean!
+    lastHeaderId: ID!
+  }
 
-    state: TransactionState!
+  type Offer {
+    id: ID!
+
+    transaction: Transaction!
+
+    counterpartySnapshot: CounterpartySnapshot
+
+    state: OfferState!
   }
 
   extend type Query {
     myTransactions: [Transaction!]!
-    myOffers: [Transaction!]!
+    myOffers: [Offer!]!
     myBalance: Float!
+    offer(transactionId: ID!): Offer!
   }
 
   extend type Mutation {
-    offerCredits(creditorId: ID!, amount: Float!): Transaction!
+    createOffer(creditorId: ID!, amount: Float!): ID!
     declineOffer(transactionId: ID!): ID!
-    acceptOffer(transactionId: ID!): ID!
+    acceptOffer(transactionId: ID!, approvedHeaderId: ID!): ID!
   }
 `;

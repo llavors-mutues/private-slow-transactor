@@ -25,7 +25,12 @@ pub mod get_chain_snapshot;
 pub mod message;
 pub mod utils;
 
-use get_chain_snapshot::BalanceSnapshot;
+use get_chain_snapshot::CounterpartySnapshot;
+
+use hdk::holochain_json_api::{error::JsonError, json::JsonString};
+
+#[derive(Serialize, Deserialize, Debug, crate::DefaultJson, Clone)]
+pub struct MyBalance(f64);
 
 #[zome]
 mod transactor {
@@ -56,7 +61,7 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn offer_credits(
+    pub fn create_offer(
         creditor_address: Address,
         amount: f64,
         timestamp: usize,
@@ -65,8 +70,10 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_counterparty_balance(transaction_address: Address) -> ZomeApiResult<BalanceSnapshot> {
-        get_chain_snapshot::sender::get_counterparty_balance(transaction_address)
+    pub fn get_counterparty_snapshot(
+        transaction_address: Address,
+    ) -> ZomeApiResult<CounterpartySnapshot> {
+        get_chain_snapshot::sender::get_counterparty_snapshot(transaction_address)
     }
 
     #[zome_fn("hc_public")]
@@ -74,12 +81,33 @@ mod transactor {
         transaction_address: Address,
         approved_header_address: Address,
     ) -> ZomeApiResult<()> {
-        complete_transaction::accept_offer::send_accept_offer(transaction_address, approved_header_address)
+        complete_transaction::accept_offer::send_accept_offer(
+            transaction_address,
+            approved_header_address,
+        )
     }
 
     #[zome_fn("hc_public")]
-    pub fn get_completed_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
+    pub fn query_my_balance() -> ZomeApiResult<MyBalance> {
+        let transactions = transaction::get_my_completed_transactions()?;
+
+        let balance = transaction::compute_balance(&hdk::AGENT_ADDRESS.clone(), &transactions);
+        Ok(MyBalance(balance))
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn query_my_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
         transaction::get_my_completed_transactions()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn query_offer(transaction_address: Address) -> ZomeApiResult<offer::Offer> {
+        offer::query_offer(&transaction_address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn query_my_offers() -> ZomeApiResult<Vec<(Address, offer::Offer)>> {
+        offer::query_my_offers()
     }
 
     #[receive]
