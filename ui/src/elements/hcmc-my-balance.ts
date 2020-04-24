@@ -1,10 +1,10 @@
-import { moduleConnect } from '@uprtcl/micro-orchestrator';
 import { LitElement, html, property } from 'lit-element';
 import { ApolloClient } from 'apollo-boost';
-
 import '@authentic/mwc-circular-progress';
-import { GET_MY_BALANCE } from 'src/graphql/queries';
+import { moduleConnect } from '@uprtcl/micro-orchestrator';
 import { ApolloClientModule } from '@uprtcl/graphql';
+
+import { GET_MY_BALANCE } from '../graphql/queries';
 
 export class MyBalance extends moduleConnect(LitElement) {
   client!: ApolloClient<any>;

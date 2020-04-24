@@ -50,6 +50,7 @@ export class OfferDetail extends moduleConnect(LitElement) {
       <div class="column">
         <span>${this.offer.counterpartySnapshot.balance}</span>
         <mwc-button
+          .disabled=${!this.offer.counterpartySnapshot.executable}
           label="ACCEPT"
           @click=${() => this.acceptOffer()}
         ></mwc-button>

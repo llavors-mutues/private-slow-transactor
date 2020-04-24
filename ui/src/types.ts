@@ -22,7 +22,6 @@ export interface Offer {
   id: string;
 
   transaction: Transaction;
-
   state: string;
 
   counterpartySnapshot: CounterpartySnapshot;
