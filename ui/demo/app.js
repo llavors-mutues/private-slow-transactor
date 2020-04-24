@@ -11,6 +11,7 @@ export class DemoApp extends LitElement {
 
   render() {
     return html`
+      <hcmc-my-balance></hcmc-my-balance>
       <hcmc-create-offer></hcmc-create-offer>
       <hcmc-pending-offer-list
         @offer-selected=${(e) =>

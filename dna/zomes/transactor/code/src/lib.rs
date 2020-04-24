@@ -27,6 +27,11 @@ pub mod utils;
 
 use get_chain_snapshot::CounterpartySnapshot;
 
+use hdk::holochain_json_api::{error::JsonError, json::JsonString};
+
+#[derive(Serialize, Deserialize, Debug, crate::DefaultJson, Clone)]
+pub struct MyBalance(f64);
+
 #[zome]
 mod transactor {
 
@@ -80,6 +85,14 @@ mod transactor {
             transaction_address,
             approved_header_address,
         )
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn query_my_balance() -> ZomeApiResult<MyBalance> {
+        let transactions = transaction::get_my_completed_transactions()?;
+
+        let balance = transaction::compute_balance(&hdk::AGENT_ADDRESS.clone(), &transactions);
+        Ok(MyBalance(balance))
     }
 
     #[zome_fn("hc_public")]

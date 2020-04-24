@@ -1,5 +1,11 @@
 import gql from 'graphql-tag';
 
+export const GET_MY_BALANCE = gql`
+  query GetMyBalance {
+    myBalance
+  }
+`;
+
 export const GET_MY_TRANSACTIONS = gql`
   query GetMyTransactions {
     myTransactions {
@@ -56,17 +62,25 @@ export const GET_OFFER_DETAIL = gql`
         executable
         valid
         balance
+        lastHeaderId
       }
 
       state
-
     }
   }
-
-`
+`;
 
 export const CREATE_OFFER = gql`
   mutation CreateOffer($creditorId: ID!, $amount: Float!) {
     createOffer(creditorId: $creditorId, amount: $amount)
+  }
+`;
+
+export const ACCEPT_OFFER = gql`
+  mutation AcceptOffer($transactionId: ID!, $approvedHeaderId: ID!) {
+    acceptOffer(
+      transactionId: $transactionId
+      approvedHeaderId: $approvedHeaderId
+    )
   }
 `;

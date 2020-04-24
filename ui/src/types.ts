@@ -15,6 +15,7 @@ export interface CounterpartySnapshot {
   valid: boolean;
   executable: boolean;
   balance: number;
+  lastHeaderId: string;
 }
 
 export interface Offer {

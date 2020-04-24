@@ -39,6 +39,11 @@ export const resolvers = {
       });
     },
   },
+  CounterpartySnapshot: {
+    lastHeaderId(parent) {
+      return parent.last_header_address;
+    },
+  },
   Query: {
     async offer(_, { transactionId }, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
@@ -71,7 +76,8 @@ export const resolvers = {
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('query_my_balance', {});
+      const result = await mutualCreditProvider.call('query_my_balance', {});
+      return result.hasOwnProperty('Ok') ? result.Ok : result;
     },
   },
   Mutation: {
@@ -86,14 +92,17 @@ export const resolvers = {
         timestamp: Math.floor(Date.now() / 1000),
       });
     },
-    async acceptOffer(_, { transactionId }, { container }) {
+    async acceptOffer(_, { transactionId, approvedHeaderId }, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('accept_offer', {
+      await mutualCreditProvider.call('accept_offer', {
         transaction_address: transactionId,
+        approved_header_address: approvedHeaderId,
       });
+
+      return transactionId;
     },
   },
 };

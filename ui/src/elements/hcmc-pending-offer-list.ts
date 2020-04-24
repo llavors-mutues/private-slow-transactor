@@ -39,13 +39,18 @@ export class PendingOfferList extends moduleConnect(LitElement) {
     );
   }
 
+  getPendingOffers() {
+    return this.offers.filter((offer) => offer.state !== 'Completed');
+  }
+
   render() {
     if (!this.offers)
       return html`<mwc-circular-progress></mwc-circular-progress>`;
 
+    const pendingOffers = this.getPendingOffers();
     return html`
       <mwc-list>
-        ${this.offers.map(
+        ${pendingOffers.map(
           (offer) => html`
             <mwc-list-item @click=${() => this.offerSelected(offer.id)}>
               <div class="column">

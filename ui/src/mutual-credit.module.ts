@@ -15,9 +15,10 @@ import { mutualCreditTypeDefs } from './graphql/schema';
 import { MutualCreditBindings } from './bindings';
 import { resolvers } from './graphql/resolvers';
 import { OfferDetail } from './elements/hcmc-offer-detail';
+import { MyBalance } from './elements/hcmc-my-balance';
 
 export class MutualCreditModule extends MicroModule {
-  static id = Symbol('mutual-credit-module');
+  static id = 'mutual-credit-module';
 
   dependencies = [HolochainConnectionModule.id];
 
@@ -41,6 +42,7 @@ export class MutualCreditModule extends MicroModule {
     customElements.define('hcmc-create-offer', CreateOffer);
     customElements.define('hcmc-pending-offer-list', PendingOfferList);
     customElements.define('hcmc-offer-detail', OfferDetail);
+    customElements.define('hcmc-my-balance', MyBalance);
   }
 
   get submodules() {

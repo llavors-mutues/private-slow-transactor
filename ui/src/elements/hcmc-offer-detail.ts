@@ -4,7 +4,7 @@ import { sharedStyles } from './sharedStyles';
 import { Offer } from 'src/types';
 import { ApolloClientModule } from '@uprtcl/graphql';
 import { ApolloClient } from 'apollo-boost';
-import { GET_OFFER_DETAIL } from 'src/graphql/queries';
+import { GET_OFFER_DETAIL, ACCEPT_OFFER } from 'src/graphql/queries';
 
 export class OfferDetail extends moduleConnect(LitElement) {
   @property({ type: String })
@@ -32,10 +32,28 @@ export class OfferDetail extends moduleConnect(LitElement) {
     this.offer = result.data.offer;
   }
 
+  acceptOffer() {
+    this.client.mutate({
+      mutation: ACCEPT_OFFER,
+      variables: {
+        transactionId: this.transactionId,
+        approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
+      },
+    });
+  }
+
   render() {
     if (!this.offer)
       return html`<mwc-circular-progress></mwc-circular-progress>`;
 
-    return html` <span>${this.offer.counterpartySnapshot.balance}</span> `;
+    return html`
+      <div class="column">
+        <span>${this.offer.counterpartySnapshot.balance}</span>
+        <mwc-button
+          label="ACCEPT"
+          @click=${() => this.acceptOffer()}
+        ></mwc-button>
+      </div>
+    `;
   }
 }
