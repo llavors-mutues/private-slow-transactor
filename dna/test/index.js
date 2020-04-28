@@ -49,7 +49,7 @@ function offerCredits(to, credits) {
 
 function getCounterpartyBalance(transactionAddress) {
   return (caller) =>
-    caller.call("transactor", "transactor", "get_counterparty_balance", {
+    caller.call("transactor", "transactor", "get_counterparty_snapshot", {
       transaction_address: transactionAddress,
     });
 }
