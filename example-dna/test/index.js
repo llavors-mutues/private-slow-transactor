@@ -18,7 +18,7 @@ process.on("unhandledRejection", (error) => {
   console.error("got unhandledRejection:", error);
 });
 
-const dnaPath = path.join(__dirname, "../dist/dna.dna.json");
+const dnaPath = path.join(__dirname, "../dist/example-dna.dna.json");
 
 const dna = Config.dna(dnaPath, "scaffold-test");
 const conductorConfig = Config.gen(
