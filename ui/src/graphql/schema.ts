@@ -3,10 +3,6 @@ import gql from 'graphql-tag';
 export const mutualCreditTypeDefs = gql`
   scalar Date
 
-  type Agent {
-    id: ID!
-  }
-
   enum OfferState {
     Received
     Pending
