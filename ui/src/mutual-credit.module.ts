@@ -5,6 +5,7 @@ import {
   HolochainConnectionModule,
   createHolochainProvider,
 } from '@uprtcl/holochain-provider';
+import { ProfilesModule } from 'holochain-profiles';
 
 import { CreateOffer } from './elements/hcmc-create-offer';
 import { PendingOfferList } from './elements/hcmc-pending-offer-list';
@@ -20,7 +21,7 @@ import { MyBalance } from './elements/hcmc-my-balance';
 export class MutualCreditModule extends MicroModule {
   static id = 'mutual-credit-module';
 
-  dependencies = [HolochainConnectionModule.id];
+  dependencies = [HolochainConnectionModule.id, ProfilesModule.id];
 
   static bindings = MutualCreditBindings;
 
