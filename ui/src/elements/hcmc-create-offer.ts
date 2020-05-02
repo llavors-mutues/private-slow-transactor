@@ -16,6 +16,9 @@ export class CreateOffer extends moduleConnect(LitElement) {
   @query('#creditor')
   creditorField!: TextFieldBase;
 
+  @property({ type: String })
+  creditor: string | undefined = undefined;
+
   client!: ApolloClient<any>;
 
   static get styles() {
@@ -46,13 +49,16 @@ export class CreateOffer extends moduleConnect(LitElement) {
           id="amount"
           min="0.1"
           step="0.1"
-          outlined
+          autoValidate
         ></mwc-textfield>
+
         <mwc-textfield
+          .disabled=${this.creditor !== undefined}
+          .value=${this.creditor}
           style="padding-bottom: 16px;"
           id="creditor"
           label="Creditor"
-          outlined
+          autoValidate
         ></mwc-textfield>
 
         <mwc-button

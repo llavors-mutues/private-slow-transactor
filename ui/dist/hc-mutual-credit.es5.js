@@ -6,7 +6,7 @@ import { TextFieldBase } from '@material/mwc-textfield/mwc-textfield-base';
 import '@material/mwc-top-app-bar';
 import '@material/mwc-list';
 import gql from 'graphql-tag';
-import { css, LitElement, html, query, property } from 'lit-element';
+import { css, LitElement, html, property, query } from 'lit-element';
 import '@authentic/mwc-circular-progress';
 import { moduleConnect, MicroModule, i18nextModule } from '@uprtcl/micro-orchestrator';
 import { ApolloClientModule, GraphQlSchemaModule } from '@uprtcl/graphql';
@@ -139,6 +139,10 @@ const sharedStyles = css `
 `;
 
 class CreateOffer extends moduleConnect(LitElement) {
+    constructor() {
+        super(...arguments);
+        this.creditor = undefined;
+    }
     static get styles() {
         return sharedStyles;
     }
@@ -164,13 +168,16 @@ class CreateOffer extends moduleConnect(LitElement) {
           id="amount"
           min="0.1"
           step="0.1"
-          outlined
+          autoValidate
         ></mwc-textfield>
+
         <mwc-textfield
+          .disabled=${this.creditor !== undefined}
+          .value=${this.creditor}
           style="padding-bottom: 16px;"
           id="creditor"
           label="Creditor"
-          outlined
+          autoValidate
         ></mwc-textfield>
 
         <mwc-button
@@ -190,6 +197,10 @@ __decorate([
     query('#creditor'),
     __metadata("design:type", TextFieldBase)
 ], CreateOffer.prototype, "creditorField", void 0);
+__decorate([
+    property({ type: String }),
+    __metadata("design:type", Object)
+], CreateOffer.prototype, "creditor", void 0);
 
 class PendingOfferList extends moduleConnect(LitElement) {
     static get styles() {
@@ -341,15 +352,10 @@ function offerToTransaction(id, offer) {
 const resolvers = {
     Transaction: {
         creditor(parent) {
-            return parent.creditor_address;
+            return { id: parent.creditor_address };
         },
         debtor(parent) {
-            return parent.debtor_address;
-        },
-    },
-    Agent: {
-        id(parent) {
-            return parent;
+            return { id: parent.debtor_address };
         },
     },
     Offer: {

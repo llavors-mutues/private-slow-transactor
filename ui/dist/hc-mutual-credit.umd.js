@@ -134,6 +134,10 @@
 `;
 
     class CreateOffer extends microOrchestrator.moduleConnect(litElement.LitElement) {
+        constructor() {
+            super(...arguments);
+            this.creditor = undefined;
+        }
         static get styles() {
             return sharedStyles;
         }
@@ -159,13 +163,16 @@
           id="amount"
           min="0.1"
           step="0.1"
-          outlined
+          autoValidate
         ></mwc-textfield>
+
         <mwc-textfield
+          .disabled=${this.creditor !== undefined}
+          .value=${this.creditor}
           style="padding-bottom: 16px;"
           id="creditor"
           label="Creditor"
-          outlined
+          autoValidate
         ></mwc-textfield>
 
         <mwc-button
@@ -185,6 +192,10 @@
         litElement.query('#creditor'),
         __metadata("design:type", mwcTextfieldBase.TextFieldBase)
     ], CreateOffer.prototype, "creditorField", void 0);
+    __decorate([
+        litElement.property({ type: String }),
+        __metadata("design:type", Object)
+    ], CreateOffer.prototype, "creditor", void 0);
 
     class PendingOfferList extends microOrchestrator.moduleConnect(litElement.LitElement) {
         static get styles() {
@@ -336,15 +347,10 @@
     const resolvers = {
         Transaction: {
             creditor(parent) {
-                return parent.creditor_address;
+                return { id: parent.creditor_address };
             },
             debtor(parent) {
-                return parent.debtor_address;
-            },
-        },
-        Agent: {
-            id(parent) {
-                return parent;
+                return { id: parent.debtor_address };
             },
         },
         Offer: {

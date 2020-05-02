@@ -10,6 +10,7 @@ declare const CreateOffer_base: {
 export declare class CreateOffer extends CreateOffer_base {
     amountField: TextFieldBase;
     creditorField: TextFieldBase;
+    creditor: string | undefined;
     client: ApolloClient<any>;
     static get styles(): import("lit-element").CSSResult;
     firstUpdated(): void;

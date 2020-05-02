@@ -1,10 +1,11 @@
 export declare const resolvers: {
     Transaction: {
-        creditor(parent: any): any;
-        debtor(parent: any): any;
-    };
-    Agent: {
-        id(parent: any): any;
+        creditor(parent: any): {
+            id: any;
+        };
+        debtor(parent: any): {
+            id: any;
+        };
     };
     Offer: {
         counterpartySnapshot(parent: any, _: any, { container }: {

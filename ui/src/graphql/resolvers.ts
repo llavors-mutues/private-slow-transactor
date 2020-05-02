@@ -17,15 +17,10 @@ function offerToTransaction(id, offer) {
 export const resolvers = {
   Transaction: {
     creditor(parent) {
-      return parent.creditor_address;
+      return { id: parent.creditor_address };
     },
     debtor(parent) {
-      return parent.debtor_address;
-    },
-  },
-  Agent: {
-    id(parent) {
-      return parent;
+      return { id: parent.debtor_address };
     },
   },
   Offer: {
