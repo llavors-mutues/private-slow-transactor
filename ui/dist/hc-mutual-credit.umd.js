@@ -151,6 +151,11 @@
   .item {
     margin-bottom: 8px;
   }
+
+  .padding {
+    padding: 16px;
+  }
+
   .title {
     font-weight: bold;
     font-size: 18px;
@@ -307,6 +312,9 @@
     ], MCPendingOfferList.prototype, "offers", void 0);
 
     class MCTransactionList extends microOrchestrator.moduleConnect(litElement.LitElement) {
+        static get styles() {
+            return sharedStyles;
+        }
         async firstUpdated() {
             const client = this.request(graphql.ApolloClientModule.bindings.Client);
             const result = await client.query({
@@ -330,9 +338,15 @@
         }
         renderContent() {
             if (!this.transactions)
-                return litElement.html ` <mwc-circular-progress></mwc-circular-progress> `;
+                return litElement.html `
+        <div class="padding center-content">
+          <mwc-circular-progress></mwc-circular-progress>
+        </div>
+      `;
             if (this.transactions.length === 0)
-                return litElement.html `<span>You have no transactions in your history</span>`;
+                return litElement.html `<div class="padding">
+        <span>You have no transactions in your history</span>
+      </div>`;
             return litElement.html `
       <mwc-list>
         ${this.transactions.map((transaction) => litElement.html `
@@ -678,9 +692,13 @@
         }
         renderContent() {
             if (!this.agents)
-                return litElement.html `<mwc-circular-progress></mwc-circular-progress>`;
+                return litElement.html `<div class="padding center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+      </div>`;
             if (this.agents.length === 0)
-                return litElement.html `<span>There are no agents to which to offer credits</span>`;
+                return litElement.html `<div class="padding">
+        <span>There are no agents to which to offer credits</span>
+      </div>`;
             return litElement.html `
       ${this.renderCreateOffer()}
       <mwc-list>

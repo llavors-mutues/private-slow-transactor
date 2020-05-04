@@ -11,6 +11,7 @@ import '@authentic/mwc-circular-progress';
 import { GET_MY_TRANSACTIONS } from '../graphql/queries';
 import { Transaction } from '../types';
 import { Agent } from 'holochain-profiles';
+import { sharedStyles } from './sharedStyles';
 
 export class MCTransactionList extends moduleConnect(LitElement) {
   @property({ type: String })
@@ -18,6 +19,10 @@ export class MCTransactionList extends moduleConnect(LitElement) {
 
   @property({ type: Object, attribute: false })
   transactions!: Array<Transaction>;
+
+  static get styles() {
+    return sharedStyles;
+  }
 
   async firstUpdated() {
     const client: ApolloClient<any> = this.request(
@@ -49,10 +54,16 @@ export class MCTransactionList extends moduleConnect(LitElement) {
 
   renderContent() {
     if (!this.transactions)
-      return html` <mwc-circular-progress></mwc-circular-progress> `;
+      return html`
+        <div class="padding center-content">
+          <mwc-circular-progress></mwc-circular-progress>
+        </div>
+      `;
 
     if (this.transactions.length === 0)
-      return html`<span>You have no transactions in your history</span>`;
+      return html`<div class="padding">
+        <span>You have no transactions in your history</span>
+      </div>`;
 
     return html`
       <mwc-list>

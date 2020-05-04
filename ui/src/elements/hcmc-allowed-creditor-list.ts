@@ -83,10 +83,14 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
 
   renderContent() {
     if (!this.agents)
-      return html`<mwc-circular-progress></mwc-circular-progress>`;
+      return html`<div class="padding center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+      </div>`;
 
     if (this.agents.length === 0)
-      return html`<span>There are no agents to which to offer credits</span>`;
+      return html`<div class="padding">
+        <span>There are no agents to which to offer credits</span>
+      </div>`;
 
     return html`
       ${this.renderCreateOffer()}

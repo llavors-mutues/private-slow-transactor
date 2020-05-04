@@ -23,6 +23,11 @@ export const sharedStyles = css`
   .item {
     margin-bottom: 8px;
   }
+
+  .padding {
+    padding: 16px;
+  }
+
   .title {
     font-weight: bold;
     font-size: 18px;

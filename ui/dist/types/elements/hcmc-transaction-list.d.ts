@@ -11,6 +11,7 @@ declare const MCTransactionList_base: {
 export declare class MCTransactionList extends MCTransactionList_base {
     myAgentId: string;
     transactions: Array<Transaction>;
+    static get styles(): import("lit-element").CSSResult;
     firstUpdated(): Promise<void>;
     isOutgoing(transaction: Transaction): boolean;
     getCounterparty(transaction: Transaction): Agent;

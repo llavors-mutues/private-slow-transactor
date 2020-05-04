@@ -158,6 +158,11 @@ const sharedStyles = css `
   .item {
     margin-bottom: 8px;
   }
+
+  .padding {
+    padding: 16px;
+  }
+
   .title {
     font-weight: bold;
     font-size: 18px;
@@ -314,6 +319,9 @@ __decorate([
 ], MCPendingOfferList.prototype, "offers", void 0);
 
 class MCTransactionList extends moduleConnect(LitElement) {
+    static get styles() {
+        return sharedStyles;
+    }
     async firstUpdated() {
         const client = this.request(ApolloClientModule.bindings.Client);
         const result = await client.query({
@@ -337,9 +345,15 @@ class MCTransactionList extends moduleConnect(LitElement) {
     }
     renderContent() {
         if (!this.transactions)
-            return html ` <mwc-circular-progress></mwc-circular-progress> `;
+            return html `
+        <div class="padding center-content">
+          <mwc-circular-progress></mwc-circular-progress>
+        </div>
+      `;
         if (this.transactions.length === 0)
-            return html `<span>You have no transactions in your history</span>`;
+            return html `<div class="padding">
+        <span>You have no transactions in your history</span>
+      </div>`;
         return html `
       <mwc-list>
         ${this.transactions.map((transaction) => html `
@@ -685,9 +699,13 @@ class MCAllowedCreditorList extends moduleConnect(LitElement) {
     }
     renderContent() {
         if (!this.agents)
-            return html `<mwc-circular-progress></mwc-circular-progress>`;
+            return html `<div class="padding center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+      </div>`;
         if (this.agents.length === 0)
-            return html `<span>There are no agents to which to offer credits</span>`;
+            return html `<div class="padding">
+        <span>There are no agents to which to offer credits</span>
+      </div>`;
         return html `
       ${this.renderCreateOffer()}
       <mwc-list>
