@@ -42,8 +42,17 @@ export class MCTransactionList extends moduleConnect(LitElement) {
   }
 
   render() {
+    return html`<div class="column center-content">
+      ${this.renderContent()}
+    </div>`;
+  }
+
+  renderContent() {
     if (!this.transactions)
       return html` <mwc-circular-progress></mwc-circular-progress> `;
+
+    if (this.transactions.length === 0)
+      return html`<span>You have no transactions in your history</span>`;
 
     return html`
       <mwc-list>

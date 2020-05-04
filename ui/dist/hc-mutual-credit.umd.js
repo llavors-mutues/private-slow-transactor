@@ -324,8 +324,15 @@
                 : transaction.creditor;
         }
         render() {
+            return litElement.html `<div class="column center-content">
+      ${this.renderContent()}
+    </div>`;
+        }
+        renderContent() {
             if (!this.transactions)
                 return litElement.html ` <mwc-circular-progress></mwc-circular-progress> `;
+            if (this.transactions.length === 0)
+                return litElement.html `<span>You have no transactions in your history</span>`;
             return litElement.html `
       <mwc-list>
         ${this.transactions.map((transaction) => litElement.html `
@@ -665,8 +672,15 @@
     `;
         }
         render() {
+            return litElement.html `<div class="column center-content">
+      ${this.renderContent()}
+    </div>`;
+        }
+        renderContent() {
             if (!this.agents)
                 return litElement.html `<mwc-circular-progress></mwc-circular-progress>`;
+            if (this.agents.length === 0)
+                return litElement.html `<span>There are no agents to which to offer credits</span>`;
             return litElement.html `
       ${this.renderCreateOffer()}
       <mwc-list>

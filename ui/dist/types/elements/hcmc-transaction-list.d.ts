@@ -15,5 +15,6 @@ export declare class MCTransactionList extends MCTransactionList_base {
     isOutgoing(transaction: Transaction): boolean;
     getCounterparty(transaction: Transaction): Agent;
     render(): import("lit-element").TemplateResult;
+    renderContent(): import("lit-element").TemplateResult;
 }
 export {};

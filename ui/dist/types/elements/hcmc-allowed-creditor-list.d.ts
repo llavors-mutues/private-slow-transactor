@@ -16,5 +16,6 @@ export declare class MCAllowedCreditorList extends MCAllowedCreditorList_base {
     renderCreateOffer(): import("lit-element").TemplateResult;
     renderAgent(agent: Agent): import("lit-element").TemplateResult;
     render(): import("lit-element").TemplateResult;
+    renderContent(): import("lit-element").TemplateResult;
 }
 export {};

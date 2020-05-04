@@ -331,8 +331,15 @@ class MCTransactionList extends moduleConnect(LitElement) {
             : transaction.creditor;
     }
     render() {
+        return html `<div class="column center-content">
+      ${this.renderContent()}
+    </div>`;
+    }
+    renderContent() {
         if (!this.transactions)
             return html ` <mwc-circular-progress></mwc-circular-progress> `;
+        if (this.transactions.length === 0)
+            return html `<span>You have no transactions in your history</span>`;
         return html `
       <mwc-list>
         ${this.transactions.map((transaction) => html `
@@ -672,8 +679,15 @@ class MCAllowedCreditorList extends moduleConnect(LitElement) {
     `;
     }
     render() {
+        return html `<div class="column center-content">
+      ${this.renderContent()}
+    </div>`;
+    }
+    renderContent() {
         if (!this.agents)
             return html `<mwc-circular-progress></mwc-circular-progress>`;
+        if (this.agents.length === 0)
+            return html `<span>There are no agents to which to offer credits</span>`;
         return html `
       ${this.renderCreateOffer()}
       <mwc-list>
