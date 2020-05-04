@@ -8,6 +8,7 @@ import { ApolloClientModule } from '@uprtcl/graphql';
 
 import { MutualCreditBindings } from '../bindings';
 import { GetAllowedCreditors } from '../types';
+import { sharedStyles } from './sharedStyles';
 
 export class MCAgentList extends moduleConnect(LitElement) {
   @query('#create-offer-dialog')
@@ -21,19 +22,12 @@ export class MCAgentList extends moduleConnect(LitElement) {
 
   client!: ApolloClient<any>;
 
+  static get styles() {
+    return sharedStyles;
+  }
+
   async firstUpdated() {
     this.client = this.request(ApolloClientModule.bindings.Client);
-
-    const result = await this.client.query({
-      query: gql`
-        {
-          allAgents {
-            id
-            username
-          }
-        }
-      `,
-    });
 
     const getAllowedCreditors: GetAllowedCreditors = this.request(
       MutualCreditBindings.ValidAgentFilter

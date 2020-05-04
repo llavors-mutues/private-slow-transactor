@@ -45,10 +45,10 @@ pub fn entry_definition() -> ValidatingEntryType {
 /**
  * Returns all the transactions already completed that are present in the source chain
  */
-pub fn get_my_completed_transactions() -> ZomeApiResult<Vec<Transaction>> {
+pub fn get_my_completed_transactions() -> ZomeApiResult<Vec<(Address, Transaction)>> {
     let transactions_entries: Vec<(ChainHeader, Transaction)> = utils::query_all_into()?;
 
-    Ok(transactions_entries.iter().map(|t| t.1.clone()).collect())
+    Ok(transactions_entries.iter().map(|t| (t.0.entry_address().clone(), t.1.clone())).collect())
 }
 
 /**

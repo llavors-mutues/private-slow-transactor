@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@uprtcl/holochain-provider'), require('holochain-profiles'), require('@material/mwc-textfield'), require('@material/mwc-button'), require('@material/mwc-textfield/mwc-textfield-base'), require('@material/mwc-top-app-bar'), require('@material/mwc-list'), require('@authentic/mwc-circular-progress'), require('graphql-tag'), require('@uprtcl/micro-orchestrator'), require('lit-element'), require('apollo-boost'), require('@material/mwc-dialog'), require('@uprtcl/graphql')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@uprtcl/holochain-provider', 'holochain-profiles', '@material/mwc-textfield', '@material/mwc-button', '@material/mwc-textfield/mwc-textfield-base', '@material/mwc-top-app-bar', '@material/mwc-list', '@authentic/mwc-circular-progress', 'graphql-tag', '@uprtcl/micro-orchestrator', 'lit-element', 'apollo-boost', '@material/mwc-dialog', '@uprtcl/graphql'], factory) :
-    (factory((global.hcMutualCredit = {}),global.holochainProvider,global.holochainProfiles,null,null,global.mwcTextfieldBase,null,null,null,global.gql,global.microOrchestrator,global.litElement,global.apolloBoost,global.mwcDialog,global.graphql));
-}(this, (function (exports,holochainProvider,holochainProfiles,mwcTextfield,mwcButton,mwcTextfieldBase,mwcTopAppBar,mwcList,mwcCircularProgress,gql,microOrchestrator,litElement,apolloBoost,mwcDialog,graphql) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@uprtcl/holochain-provider'), require('holochain-profiles'), require('@material/mwc-textfield'), require('@material/mwc-button'), require('@material/mwc-textfield/mwc-textfield-base'), require('@material/mwc-top-app-bar'), require('@material/mwc-list'), require('@authentic/mwc-circular-progress'), require('graphql-tag'), require('apollo-boost'), require('@uprtcl/micro-orchestrator'), require('lit-element'), require('@material/mwc-dialog'), require('@uprtcl/graphql')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@uprtcl/holochain-provider', 'holochain-profiles', '@material/mwc-textfield', '@material/mwc-button', '@material/mwc-textfield/mwc-textfield-base', '@material/mwc-top-app-bar', '@material/mwc-list', '@authentic/mwc-circular-progress', 'graphql-tag', 'apollo-boost', '@uprtcl/micro-orchestrator', 'lit-element', '@material/mwc-dialog', '@uprtcl/graphql'], factory) :
+    (factory((global.hcMutualCredit = {}),global.holochainProvider,global.holochainProfiles,null,null,global.mwcTextfieldBase,null,null,null,global.gql,global.apolloBoost,global.microOrchestrator,global.litElement,global.mwcDialog,global.graphql));
+}(this, (function (exports,holochainProvider,holochainProfiles,mwcTextfield,mwcButton,mwcTextfieldBase,mwcTopAppBar,mwcList,mwcCircularProgress,gql,apolloBoost,microOrchestrator,litElement,mwcDialog,graphql) { 'use strict';
 
     gql = gql && gql.hasOwnProperty('default') ? gql['default'] : gql;
 
@@ -377,7 +377,8 @@
             },
             async myTransactions(_, __, { container }) {
                 const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
-                return mutualCreditProvider.call('query_my_transactions', {});
+                const transactions = await mutualCreditProvider.call('query_my_transactions', {});
+                return transactions.map((t) => ({ id: t[0], ...t[1] }));
             },
             async myOffers(_, __, { container }) {
                 const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
@@ -478,18 +479,11 @@
             this.selectedCreditor = undefined;
             this.agents = undefined;
         }
+        static get styles() {
+            return sharedStyles;
+        }
         async firstUpdated() {
             this.client = this.request(graphql.ApolloClientModule.bindings.Client);
-            const result = await this.client.query({
-                query: apolloBoost.gql `
-        {
-          allAgents {
-            id
-            username
-          }
-        }
-      `,
-            });
             const getAllowedCreditors = this.request(MutualCreditBindings.ValidAgentFilter);
             this.agents = await getAllowedCreditors(this.client);
         }

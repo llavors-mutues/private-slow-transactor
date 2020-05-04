@@ -89,14 +89,16 @@ mod transactor {
 
     #[zome_fn("hc_public")]
     pub fn query_my_balance() -> ZomeApiResult<MyBalance> {
-        let transactions = transaction::get_my_completed_transactions()?;
+        let transactions_with_addresses = transaction::get_my_completed_transactions()?;
+
+        let transactions = transactions_with_addresses.into_iter().map(|t| t.1).collect();
 
         let balance = transaction::compute_balance(&hdk::AGENT_ADDRESS.clone(), &transactions);
         Ok(MyBalance(balance))
     }
 
     #[zome_fn("hc_public")]
-    pub fn query_my_transactions() -> ZomeApiResult<Vec<transaction::Transaction>> {
+    pub fn query_my_transactions() -> ZomeApiResult<Vec<(Address, transaction::Transaction)>> {
         transaction::get_my_completed_transactions()
     }
 

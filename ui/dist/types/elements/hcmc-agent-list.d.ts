@@ -11,6 +11,7 @@ export declare class MCAgentList extends MCAgentList_base {
     selectedCreditor: string | undefined;
     agents: Agent[] | undefined;
     client: ApolloClient<any>;
+    static get styles(): import("lit-element").CSSResult;
     firstUpdated(): Promise<void>;
     renderCreateOffer(): import("lit-element").TemplateResult;
     renderAgent(agent: Agent): import("lit-element").TemplateResult;

@@ -7,9 +7,9 @@ import '@material/mwc-top-app-bar';
 import '@material/mwc-list';
 import '@authentic/mwc-circular-progress';
 import gql from 'graphql-tag';
+import { gql as gql$1 } from 'apollo-boost';
 import { moduleConnect, MicroModule, i18nextModule } from '@uprtcl/micro-orchestrator';
 import { css, LitElement, html, property, query } from 'lit-element';
-import { gql as gql$1 } from 'apollo-boost';
 import { Dialog } from '@material/mwc-dialog';
 import { ApolloClientModule, GraphQlSchemaModule } from '@uprtcl/graphql';
 
@@ -384,7 +384,8 @@ const resolvers = {
         },
         async myTransactions(_, __, { container }) {
             const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
-            return mutualCreditProvider.call('query_my_transactions', {});
+            const transactions = await mutualCreditProvider.call('query_my_transactions', {});
+            return transactions.map((t) => ({ id: t[0], ...t[1] }));
         },
         async myOffers(_, __, { container }) {
             const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
@@ -485,18 +486,11 @@ class MCAgentList extends moduleConnect(LitElement) {
         this.selectedCreditor = undefined;
         this.agents = undefined;
     }
+    static get styles() {
+        return sharedStyles;
+    }
     async firstUpdated() {
         this.client = this.request(ApolloClientModule.bindings.Client);
-        const result = await this.client.query({
-            query: gql$1 `
-        {
-          allAgents {
-            id
-            username
-          }
-        }
-      `,
-        });
         const getAllowedCreditors = this.request(MutualCreditBindings.ValidAgentFilter);
         this.agents = await getAllowedCreditors(this.client);
     }

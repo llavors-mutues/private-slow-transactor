@@ -55,7 +55,11 @@ export const resolvers = {
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('query_my_transactions', {});
+      const transactions = await mutualCreditProvider.call(
+        'query_my_transactions',
+        {}
+      );
+      return transactions.map((t) => ({ id: t[0], ...t[1] }));
     },
     async myOffers(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
