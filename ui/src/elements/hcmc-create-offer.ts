@@ -9,7 +9,7 @@ import '@material/mwc-button';
 import { TextFieldBase } from '@material/mwc-textfield/mwc-textfield-base';
 import { sharedStyles } from './sharedStyles';
 
-export class CreateOffer extends moduleConnect(LitElement) {
+export class MCCreateOffer extends moduleConnect(LitElement) {
   @query('#amount')
   amountField!: TextFieldBase;
 

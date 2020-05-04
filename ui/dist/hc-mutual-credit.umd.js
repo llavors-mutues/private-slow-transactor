@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@uprtcl/holochain-provider'), require('holochain-profiles'), require('@material/mwc-textfield'), require('@material/mwc-button'), require('@material/mwc-textfield/mwc-textfield-base'), require('@material/mwc-top-app-bar'), require('@material/mwc-list'), require('graphql-tag'), require('lit-element'), require('@authentic/mwc-circular-progress'), require('@uprtcl/micro-orchestrator'), require('@uprtcl/graphql')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@uprtcl/holochain-provider', 'holochain-profiles', '@material/mwc-textfield', '@material/mwc-button', '@material/mwc-textfield/mwc-textfield-base', '@material/mwc-top-app-bar', '@material/mwc-list', 'graphql-tag', 'lit-element', '@authentic/mwc-circular-progress', '@uprtcl/micro-orchestrator', '@uprtcl/graphql'], factory) :
-    (factory((global.hcMutualCredit = {}),global.holochainProvider,global.holochainProfiles,null,null,global.mwcTextfieldBase,null,null,global.gql,global.litElement,null,global.microOrchestrator,global.graphql));
-}(this, (function (exports,holochainProvider,holochainProfiles,mwcTextfield,mwcButton,mwcTextfieldBase,mwcTopAppBar,mwcList,gql,litElement,mwcCircularProgress,microOrchestrator,graphql) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@uprtcl/holochain-provider'), require('holochain-profiles'), require('@material/mwc-textfield'), require('@material/mwc-button'), require('@material/mwc-textfield/mwc-textfield-base'), require('@material/mwc-top-app-bar'), require('@material/mwc-list'), require('@authentic/mwc-circular-progress'), require('graphql-tag'), require('@uprtcl/micro-orchestrator'), require('lit-element'), require('apollo-boost'), require('@material/mwc-dialog'), require('@uprtcl/graphql')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@uprtcl/holochain-provider', 'holochain-profiles', '@material/mwc-textfield', '@material/mwc-button', '@material/mwc-textfield/mwc-textfield-base', '@material/mwc-top-app-bar', '@material/mwc-list', '@authentic/mwc-circular-progress', 'graphql-tag', '@uprtcl/micro-orchestrator', 'lit-element', 'apollo-boost', '@material/mwc-dialog', '@uprtcl/graphql'], factory) :
+    (factory((global.hcMutualCredit = {}),global.holochainProvider,global.holochainProfiles,null,null,global.mwcTextfieldBase,null,null,null,global.gql,global.microOrchestrator,global.litElement,global.apolloBoost,global.mwcDialog,global.graphql));
+}(this, (function (exports,holochainProvider,holochainProfiles,mwcTextfield,mwcButton,mwcTextfieldBase,mwcTopAppBar,mwcList,mwcCircularProgress,gql,microOrchestrator,litElement,apolloBoost,mwcDialog,graphql) { 'use strict';
 
     gql = gql && gql.hasOwnProperty('default') ? gql['default'] : gql;
 
@@ -133,7 +133,7 @@
   }
 `;
 
-    class CreateOffer extends microOrchestrator.moduleConnect(litElement.LitElement) {
+    class MCCreateOffer extends microOrchestrator.moduleConnect(litElement.LitElement) {
         constructor() {
             super(...arguments);
             this.creditor = undefined;
@@ -187,17 +187,17 @@
     __decorate([
         litElement.query('#amount'),
         __metadata("design:type", mwcTextfieldBase.TextFieldBase)
-    ], CreateOffer.prototype, "amountField", void 0);
+    ], MCCreateOffer.prototype, "amountField", void 0);
     __decorate([
         litElement.query('#creditor'),
         __metadata("design:type", mwcTextfieldBase.TextFieldBase)
-    ], CreateOffer.prototype, "creditorField", void 0);
+    ], MCCreateOffer.prototype, "creditorField", void 0);
     __decorate([
         litElement.property({ type: String }),
         __metadata("design:type", Object)
-    ], CreateOffer.prototype, "creditor", void 0);
+    ], MCCreateOffer.prototype, "creditor", void 0);
 
-    class PendingOfferList extends microOrchestrator.moduleConnect(litElement.LitElement) {
+    class MCPendingOfferList extends microOrchestrator.moduleConnect(litElement.LitElement) {
         static get styles() {
             return sharedStyles;
         }
@@ -243,9 +243,9 @@
     __decorate([
         litElement.property({ type: Object, attribute: false }),
         __metadata("design:type", Array)
-    ], PendingOfferList.prototype, "offers", void 0);
+    ], MCPendingOfferList.prototype, "offers", void 0);
 
-    class TransactionList extends microOrchestrator.moduleConnect(litElement.LitElement) {
+    class MCTransactionList extends microOrchestrator.moduleConnect(litElement.LitElement) {
         async firstUpdated() {
             const client = this.request(graphql.ApolloClientModule.bindings.Client);
             const result = await client.query({
@@ -272,7 +272,7 @@
     __decorate([
         litElement.property({ type: Object, attribute: false }),
         __metadata("design:type", Array)
-    ], TransactionList.prototype, "transactions", void 0);
+    ], MCTransactionList.prototype, "transactions", void 0);
 
     var en = {
     	
@@ -330,7 +330,8 @@
 `;
 
     const MutualCreditBindings = {
-        MutualCreditProvider: "mutual-credit-provider"
+        MutualCreditProvider: 'mutual-credit-provider',
+        ValidAgentFilter: 'valid-agent-filter',
     };
 
     function offerToTransaction(id, offer) {
@@ -410,7 +411,7 @@
         },
     };
 
-    class OfferDetail extends microOrchestrator.moduleConnect(litElement.LitElement) {
+    class MCOfferDetail extends microOrchestrator.moduleConnect(litElement.LitElement) {
         static get styles() {
             return sharedStyles;
         }
@@ -451,35 +452,103 @@
     __decorate([
         litElement.property({ type: String }),
         __metadata("design:type", String)
-    ], OfferDetail.prototype, "transactionId", void 0);
+    ], MCOfferDetail.prototype, "transactionId", void 0);
     __decorate([
         litElement.property({ type: Object }),
         __metadata("design:type", Object)
-    ], OfferDetail.prototype, "offer", void 0);
+    ], MCOfferDetail.prototype, "offer", void 0);
 
-    class MyBalance extends microOrchestrator.moduleConnect(litElement.LitElement) {
+    const allAgentsAllowed = async (client) => {
+        const result = await client.query({
+            query: apolloBoost.gql `
+      {
+        allAgents {
+          id
+          username
+        }
+      }
+    `,
+        });
+        return result.data.allAgents;
+    };
+
+    class MCAgentList extends microOrchestrator.moduleConnect(litElement.LitElement) {
+        constructor() {
+            super(...arguments);
+            this.selectedCreditor = undefined;
+            this.agents = undefined;
+        }
         async firstUpdated() {
             this.client = this.request(graphql.ApolloClientModule.bindings.Client);
             const result = await this.client.query({
-                query: GET_MY_BALANCE,
+                query: apolloBoost.gql `
+        {
+          allAgents {
+            id
+            username
+          }
+        }
+      `,
             });
-            this.balance = result.data.myBalance;
+            const getAllowedCreditors = this.request(MutualCreditBindings.ValidAgentFilter);
+            this.agents = await getAllowedCreditors(this.client);
+        }
+        renderCreateOffer() {
+            return litElement.html `<mwc-dialog id="create-offer-dialog">
+      <hcmc-create-offer .creditor=${this.selectedCreditor}>
+      </hcmc-create-offer>
+    </mwc-dialog>`;
+        }
+        renderAgent(agent) {
+            return litElement.html `
+      <div class="row" style="align-items: center;">
+        <mwc-list-item style="flex: 1;" twoline noninteractive>
+          <span>${agent.username}</span>
+          <span slot="secondary">${agent.id}</span>
+        </mwc-list-item>
+
+        <mwc-button
+          label="Offer credits"
+          @click=${() => {
+            this.selectedCreditor = agent.id;
+            this.createOfferDialog.open = true;
+        }}
+        ></mwc-button>
+      </div>
+    `;
         }
         render() {
-            if (this.balance === undefined)
+            if (!this.agents)
                 return litElement.html `<mwc-circular-progress></mwc-circular-progress>`;
-            return litElement.html ` <span>${this.balance}</span> `;
+            return litElement.html `
+      ${this.renderCreateOffer()}
+      <mwc-list>
+        ${this.agents.map((agent, i) => litElement.html `${this.renderAgent(agent)}
+          ${this.agents && i < this.agents.length - 1
+            ? litElement.html `<li divider padded role="separator"></li> `
+            : litElement.html ``} `)}
+      </mwc-list>
+    `;
         }
     }
     __decorate([
-        litElement.property({ attribute: false, type: Number }),
-        __metadata("design:type", Number)
-    ], MyBalance.prototype, "balance", void 0);
+        litElement.query('#create-offer-dialog'),
+        __metadata("design:type", mwcDialog.Dialog)
+    ], MCAgentList.prototype, "createOfferDialog", void 0);
+    __decorate([
+        litElement.property({ type: String }),
+        __metadata("design:type", Object)
+    ], MCAgentList.prototype, "selectedCreditor", void 0);
+    __decorate([
+        litElement.property({ type: Array }),
+        __metadata("design:type", Object)
+    ], MCAgentList.prototype, "agents", void 0);
 
     class MutualCreditModule extends microOrchestrator.MicroModule {
-        constructor(instance) {
+        constructor(instance, agentFilter = allAgentsAllowed) {
             super();
             this.instance = instance;
+            this.agentFilter = agentFilter;
             this.dependencies = [holochainProvider.HolochainConnectionModule.id, holochainProfiles.ProfilesModule.id];
         }
         async onLoad(container) {
@@ -487,11 +556,14 @@
             container
                 .bind(MutualCreditBindings.MutualCreditProvider)
                 .to(mutualCreditProvider);
-            customElements.define('hcmc-transaction-list', TransactionList);
-            customElements.define('hcmc-create-offer', CreateOffer);
-            customElements.define('hcmc-pending-offer-list', PendingOfferList);
-            customElements.define('hcmc-offer-detail', OfferDetail);
-            customElements.define('hcmc-my-balance', MyBalance);
+            container
+                .bind(MutualCreditBindings.ValidAgentFilter)
+                .toConstantValue(this.agentFilter);
+            customElements.define('hcmc-transaction-list', MCTransactionList);
+            customElements.define('hcmc-create-offer', MCCreateOffer);
+            customElements.define('hcmc-pending-offer-list', MCPendingOfferList);
+            customElements.define('hcmc-offer-detail', MCOfferDetail);
+            customElements.define('hcmc-agent-list', MCAgentList);
         }
         get submodules() {
             return [

@@ -6,7 +6,7 @@ import { ApolloClientModule } from '@uprtcl/graphql';
 import { ApolloClient } from 'apollo-boost';
 import { GET_OFFER_DETAIL, ACCEPT_OFFER } from 'src/graphql/queries';
 
-export class OfferDetail extends moduleConnect(LitElement) {
+export class MCOfferDetail extends moduleConnect(LitElement) {
   @property({ type: String })
   transactionId!: string;
 

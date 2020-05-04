@@ -5,10 +5,12 @@ import '@material/mwc-button';
 import { TextFieldBase } from '@material/mwc-textfield/mwc-textfield-base';
 import '@material/mwc-top-app-bar';
 import '@material/mwc-list';
-import gql from 'graphql-tag';
-import { css, LitElement, html, property, query } from 'lit-element';
 import '@authentic/mwc-circular-progress';
+import gql from 'graphql-tag';
 import { moduleConnect, MicroModule, i18nextModule } from '@uprtcl/micro-orchestrator';
+import { css, LitElement, html, property, query } from 'lit-element';
+import { gql as gql$1 } from 'apollo-boost';
+import { Dialog } from '@material/mwc-dialog';
 import { ApolloClientModule, GraphQlSchemaModule } from '@uprtcl/graphql';
 
 /*! *****************************************************************************
@@ -138,7 +140,7 @@ const sharedStyles = css `
   }
 `;
 
-class CreateOffer extends moduleConnect(LitElement) {
+class MCCreateOffer extends moduleConnect(LitElement) {
     constructor() {
         super(...arguments);
         this.creditor = undefined;
@@ -192,17 +194,17 @@ class CreateOffer extends moduleConnect(LitElement) {
 __decorate([
     query('#amount'),
     __metadata("design:type", TextFieldBase)
-], CreateOffer.prototype, "amountField", void 0);
+], MCCreateOffer.prototype, "amountField", void 0);
 __decorate([
     query('#creditor'),
     __metadata("design:type", TextFieldBase)
-], CreateOffer.prototype, "creditorField", void 0);
+], MCCreateOffer.prototype, "creditorField", void 0);
 __decorate([
     property({ type: String }),
     __metadata("design:type", Object)
-], CreateOffer.prototype, "creditor", void 0);
+], MCCreateOffer.prototype, "creditor", void 0);
 
-class PendingOfferList extends moduleConnect(LitElement) {
+class MCPendingOfferList extends moduleConnect(LitElement) {
     static get styles() {
         return sharedStyles;
     }
@@ -248,9 +250,9 @@ class PendingOfferList extends moduleConnect(LitElement) {
 __decorate([
     property({ type: Object, attribute: false }),
     __metadata("design:type", Array)
-], PendingOfferList.prototype, "offers", void 0);
+], MCPendingOfferList.prototype, "offers", void 0);
 
-class TransactionList extends moduleConnect(LitElement) {
+class MCTransactionList extends moduleConnect(LitElement) {
     async firstUpdated() {
         const client = this.request(ApolloClientModule.bindings.Client);
         const result = await client.query({
@@ -277,7 +279,7 @@ class TransactionList extends moduleConnect(LitElement) {
 __decorate([
     property({ type: Object, attribute: false }),
     __metadata("design:type", Array)
-], TransactionList.prototype, "transactions", void 0);
+], MCTransactionList.prototype, "transactions", void 0);
 
 var en = {
 	
@@ -335,7 +337,8 @@ const mutualCreditTypeDefs = gql `
 `;
 
 const MutualCreditBindings = {
-    MutualCreditProvider: "mutual-credit-provider"
+    MutualCreditProvider: 'mutual-credit-provider',
+    ValidAgentFilter: 'valid-agent-filter',
 };
 
 function offerToTransaction(id, offer) {
@@ -415,7 +418,7 @@ const resolvers = {
     },
 };
 
-class OfferDetail extends moduleConnect(LitElement) {
+class MCOfferDetail extends moduleConnect(LitElement) {
     static get styles() {
         return sharedStyles;
     }
@@ -456,35 +459,103 @@ class OfferDetail extends moduleConnect(LitElement) {
 __decorate([
     property({ type: String }),
     __metadata("design:type", String)
-], OfferDetail.prototype, "transactionId", void 0);
+], MCOfferDetail.prototype, "transactionId", void 0);
 __decorate([
     property({ type: Object }),
     __metadata("design:type", Object)
-], OfferDetail.prototype, "offer", void 0);
+], MCOfferDetail.prototype, "offer", void 0);
 
-class MyBalance extends moduleConnect(LitElement) {
+const allAgentsAllowed = async (client) => {
+    const result = await client.query({
+        query: gql$1 `
+      {
+        allAgents {
+          id
+          username
+        }
+      }
+    `,
+    });
+    return result.data.allAgents;
+};
+
+class MCAgentList extends moduleConnect(LitElement) {
+    constructor() {
+        super(...arguments);
+        this.selectedCreditor = undefined;
+        this.agents = undefined;
+    }
     async firstUpdated() {
         this.client = this.request(ApolloClientModule.bindings.Client);
         const result = await this.client.query({
-            query: GET_MY_BALANCE,
+            query: gql$1 `
+        {
+          allAgents {
+            id
+            username
+          }
+        }
+      `,
         });
-        this.balance = result.data.myBalance;
+        const getAllowedCreditors = this.request(MutualCreditBindings.ValidAgentFilter);
+        this.agents = await getAllowedCreditors(this.client);
+    }
+    renderCreateOffer() {
+        return html `<mwc-dialog id="create-offer-dialog">
+      <hcmc-create-offer .creditor=${this.selectedCreditor}>
+      </hcmc-create-offer>
+    </mwc-dialog>`;
+    }
+    renderAgent(agent) {
+        return html `
+      <div class="row" style="align-items: center;">
+        <mwc-list-item style="flex: 1;" twoline noninteractive>
+          <span>${agent.username}</span>
+          <span slot="secondary">${agent.id}</span>
+        </mwc-list-item>
+
+        <mwc-button
+          label="Offer credits"
+          @click=${() => {
+            this.selectedCreditor = agent.id;
+            this.createOfferDialog.open = true;
+        }}
+        ></mwc-button>
+      </div>
+    `;
     }
     render() {
-        if (this.balance === undefined)
+        if (!this.agents)
             return html `<mwc-circular-progress></mwc-circular-progress>`;
-        return html ` <span>${this.balance}</span> `;
+        return html `
+      ${this.renderCreateOffer()}
+      <mwc-list>
+        ${this.agents.map((agent, i) => html `${this.renderAgent(agent)}
+          ${this.agents && i < this.agents.length - 1
+            ? html `<li divider padded role="separator"></li> `
+            : html ``} `)}
+      </mwc-list>
+    `;
     }
 }
 __decorate([
-    property({ attribute: false, type: Number }),
-    __metadata("design:type", Number)
-], MyBalance.prototype, "balance", void 0);
+    query('#create-offer-dialog'),
+    __metadata("design:type", Dialog)
+], MCAgentList.prototype, "createOfferDialog", void 0);
+__decorate([
+    property({ type: String }),
+    __metadata("design:type", Object)
+], MCAgentList.prototype, "selectedCreditor", void 0);
+__decorate([
+    property({ type: Array }),
+    __metadata("design:type", Object)
+], MCAgentList.prototype, "agents", void 0);
 
 class MutualCreditModule extends MicroModule {
-    constructor(instance) {
+    constructor(instance, agentFilter = allAgentsAllowed) {
         super();
         this.instance = instance;
+        this.agentFilter = agentFilter;
         this.dependencies = [HolochainConnectionModule.id, ProfilesModule.id];
     }
     async onLoad(container) {
@@ -492,11 +563,14 @@ class MutualCreditModule extends MicroModule {
         container
             .bind(MutualCreditBindings.MutualCreditProvider)
             .to(mutualCreditProvider);
-        customElements.define('hcmc-transaction-list', TransactionList);
-        customElements.define('hcmc-create-offer', CreateOffer);
-        customElements.define('hcmc-pending-offer-list', PendingOfferList);
-        customElements.define('hcmc-offer-detail', OfferDetail);
-        customElements.define('hcmc-my-balance', MyBalance);
+        container
+            .bind(MutualCreditBindings.ValidAgentFilter)
+            .toConstantValue(this.agentFilter);
+        customElements.define('hcmc-transaction-list', MCTransactionList);
+        customElements.define('hcmc-create-offer', MCCreateOffer);
+        customElements.define('hcmc-pending-offer-list', MCPendingOfferList);
+        customElements.define('hcmc-offer-detail', MCOfferDetail);
+        customElements.define('hcmc-agent-list', MCAgentList);
     }
     get submodules() {
         return [

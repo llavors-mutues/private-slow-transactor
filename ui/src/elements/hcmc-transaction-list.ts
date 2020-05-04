@@ -11,7 +11,7 @@ import '@authentic/mwc-circular-progress';
 import { GET_MY_TRANSACTIONS } from '../graphql/queries';
 import { Transaction } from '../types';
 
-export class TransactionList extends moduleConnect(LitElement) {
+export class MCTransactionList extends moduleConnect(LitElement) {
   @property({ type: Object, attribute: false })
   transactions!: Array<Transaction>;
 

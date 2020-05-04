@@ -7,16 +7,17 @@ import {
 } from '@uprtcl/holochain-provider';
 import { ProfilesModule } from 'holochain-profiles';
 
-import { CreateOffer } from './elements/hcmc-create-offer';
-import { PendingOfferList } from './elements/hcmc-pending-offer-list';
-import { TransactionList } from './elements/hcmc-transaction-list';
+import { MCCreateOffer } from './elements/hcmc-create-offer';
+import { MCPendingOfferList } from './elements/hcmc-pending-offer-list';
+import { MCTransactionList } from './elements/hcmc-transaction-list';
 
 import en from './i18n/en.json';
 import { mutualCreditTypeDefs } from './graphql/schema';
 import { MutualCreditBindings } from './bindings';
 import { resolvers } from './graphql/resolvers';
-import { OfferDetail } from './elements/hcmc-offer-detail';
-import { MyBalance } from './elements/hcmc-my-balance';
+import { MCOfferDetail } from './elements/hcmc-offer-detail';
+import { GetAllowedCreditors, allAgentsAllowed } from './types';
+import { MCAgentList } from './elements/hcmc-agent-list';
 
 export class MutualCreditModule extends MicroModule {
   static id = 'mutual-credit-module';
@@ -25,7 +26,10 @@ export class MutualCreditModule extends MicroModule {
 
   static bindings = MutualCreditBindings;
 
-  constructor(protected instance: string) {
+  constructor(
+    protected instance: string,
+    protected agentFilter: GetAllowedCreditors = allAgentsAllowed
+  ) {
     super();
   }
 
@@ -39,11 +43,15 @@ export class MutualCreditModule extends MicroModule {
       .bind(MutualCreditBindings.MutualCreditProvider)
       .to(mutualCreditProvider);
 
-    customElements.define('hcmc-transaction-list', TransactionList);
-    customElements.define('hcmc-create-offer', CreateOffer);
-    customElements.define('hcmc-pending-offer-list', PendingOfferList);
-    customElements.define('hcmc-offer-detail', OfferDetail);
-    customElements.define('hcmc-my-balance', MyBalance);
+    container
+      .bind(MutualCreditBindings.ValidAgentFilter)
+      .toConstantValue(this.agentFilter);
+
+    customElements.define('hcmc-transaction-list', MCTransactionList);
+    customElements.define('hcmc-create-offer', MCCreateOffer);
+    customElements.define('hcmc-pending-offer-list', MCPendingOfferList);
+    customElements.define('hcmc-offer-detail', MCOfferDetail);
+    customElements.define('hcmc-agent-list', MCAgentList);
   }
 
   get submodules() {

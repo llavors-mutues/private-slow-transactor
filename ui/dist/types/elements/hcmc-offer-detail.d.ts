@@ -1,11 +1,11 @@
 import { LitElement } from 'lit-element';
 import { Offer } from 'src/types';
 import { ApolloClient } from 'apollo-boost';
-declare const OfferDetail_base: {
+declare const MCOfferDetail_base: {
     new (...args: any[]): import("@uprtcl/micro-orchestrator").ConnectedElement;
     prototype: any;
 } & typeof LitElement;
-export declare class OfferDetail extends OfferDetail_base {
+export declare class MCOfferDetail extends MCOfferDetail_base {
     transactionId: string;
     offer: Offer;
     client: ApolloClient<any>;

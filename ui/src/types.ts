@@ -1,6 +1,24 @@
-export interface Agent {
-  id: string;
-}
+import { Agent } from 'holochain-profiles';
+import { ApolloClient, gql } from 'apollo-boost';
+
+export const allAgentsAllowed: GetAllowedCreditors = async (client) => {
+  const result = await client.query({
+    query: gql`
+      {
+        allAgents {
+          id
+          username
+        }
+      }
+    `,
+  });
+
+  return result.data.allAgents;
+};
+
+export type GetAllowedCreditors = (
+  client: ApolloClient<any>
+) => Promise<Agent[]>;
 
 export interface Transaction {
   id: string;

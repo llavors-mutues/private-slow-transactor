@@ -1,3 +1,4 @@
 export const MutualCreditBindings = {
-  MutualCreditProvider: "mutual-credit-provider"
+  MutualCreditProvider: 'mutual-credit-provider',
+  ValidAgentFilter: 'valid-agent-filter',
 };

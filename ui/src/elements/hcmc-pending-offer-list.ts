@@ -7,10 +7,10 @@ import '@material/mwc-list';
 import '@authentic/mwc-circular-progress';
 
 import { GET_PENDING_OFFERS } from '../graphql/queries';
-import { Transaction, Offer } from 'src/types';
+import { Offer } from 'src/types';
 import { sharedStyles } from './sharedStyles';
 
-export class PendingOfferList extends moduleConnect(LitElement) {
+export class MCPendingOfferList extends moduleConnect(LitElement) {
   client!: ApolloClient<any>;
 
   @property({ type: Object, attribute: false })
