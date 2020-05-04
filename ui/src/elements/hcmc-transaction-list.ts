@@ -49,7 +49,7 @@ export class MCTransactionList extends moduleConnect(LitElement) {
       <mwc-list>
         ${this.transactions.map(
           (transaction) => html`
-            <mwc-list-item twoline>
+            <mwc-list-item twoline noninteractive>
               <span>
                 ${this.isOutgoing(transaction) ? 'To ' : 'From '}
                 @${this.getCounterparty(transaction).username}

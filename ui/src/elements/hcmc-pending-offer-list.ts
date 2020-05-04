@@ -73,7 +73,7 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
 
   renderOfferList(title: string, offers: Offer[]) {
     return html`<div class="column" style="margin-bottom: 24px;">
-      <span class="title">${title}</span>
+      <span class="title">${title} offers</span>
 
       ${offers.length === 0
         ? this.renderPlaceholder(title)

@@ -7,9 +7,9 @@ import '@material/mwc-top-app-bar';
 import '@material/mwc-list';
 import '@authentic/mwc-circular-progress';
 import gql from 'graphql-tag';
-import { gql as gql$1 } from 'apollo-boost';
 import { moduleConnect, MicroModule, i18nextModule } from '@uprtcl/micro-orchestrator';
 import { css, LitElement, html, property, query } from 'lit-element';
+import { gql as gql$1 } from 'apollo-boost';
 import { Dialog } from '@material/mwc-dialog';
 import { ApolloClientModule, GraphQlSchemaModule } from '@uprtcl/graphql';
 
@@ -271,7 +271,7 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
     }
     renderOfferList(title, offers) {
         return html `<div class="column" style="margin-bottom: 24px;">
-      <span class="title">${title}</span>
+      <span class="title">${title} offers</span>
 
       ${offers.length === 0
             ? this.renderPlaceholder(title)
@@ -336,7 +336,7 @@ class MCTransactionList extends moduleConnect(LitElement) {
         return html `
       <mwc-list>
         ${this.transactions.map((transaction) => html `
-            <mwc-list-item twoline>
+            <mwc-list-item twoline noninteractive>
               <span>
                 ${this.isOutgoing(transaction) ? 'To ' : 'From '}
                 @${this.getCounterparty(transaction).username}
@@ -634,7 +634,17 @@ class MCAllowedCreditorList extends moduleConnect(LitElement) {
     async firstUpdated() {
         this.client = this.request(ApolloClientModule.bindings.Client);
         const getAllowedCreditors = this.request(MutualCreditBindings.ValidAgentFilter);
-        this.agents = await getAllowedCreditors(this.client);
+        const agents = await getAllowedCreditors(this.client);
+        const result = await this.client.query({
+            query: gql$1 `
+        {
+          me {
+            id
+          }
+        }
+      `,
+        });
+        this.agents = agents.filter((a) => a.id !== result.data.me.id);
     }
     renderCreateOffer() {
         return html `<mwc-dialog id="create-offer-dialog">

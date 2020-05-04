@@ -33,7 +33,19 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
       MutualCreditBindings.ValidAgentFilter
     );
 
-    this.agents = await getAllowedCreditors(this.client);
+    const agents = await getAllowedCreditors(this.client);
+
+    const result = await this.client.query({
+      query: gql`
+        {
+          me {
+            id
+          }
+        }
+      `,
+    });
+
+    this.agents = agents.filter((a) => a.id !== result.data.me.id);
   }
 
   renderCreateOffer() {
