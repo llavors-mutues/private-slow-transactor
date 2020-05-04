@@ -94,7 +94,7 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
 
     return html`
       ${this.renderCreateOffer()}
-      <mwc-list>
+      <mwc-list style="width: 100%;">
         ${this.agents.map(
           (agent, i) => html`${this.renderAgent(agent)}
           ${this.agents && i < this.agents.length - 1

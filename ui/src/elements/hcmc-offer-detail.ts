@@ -104,21 +104,24 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     return html`
       <div class="column">
         ${this.renderCounterparty()}
-
-        <div class="row" style="margin-top: 4px;">
-          <mwc-button
-            label="DECLINE"
-            style="flex: 1;"
-            @click=${() => this.acceptOffer()}
-          ></mwc-button>
-          <mwc-button
-            style="flex: 1;"
-            .disabled=${!this.offer.counterpartySnapshot.executable}
-            label="ACCEPT"
-            raised
-            @click=${() => this.acceptOffer()}
-          ></mwc-button>
-        </div>
+        ${this.isOutgoing()
+          ? html`<span>Awaiting for approval</span>`
+          : html`
+              <div class="row" style="margin-top: 4px;">
+                <mwc-button
+                  label="DECLINE"
+                  style="flex: 1;"
+                  @click=${() => this.acceptOffer()}
+                ></mwc-button>
+                <mwc-button
+                  style="flex: 1;"
+                  .disabled=${!this.offer.counterpartySnapshot.executable}
+                  label="ACCEPT"
+                  raised
+                  @click=${() => this.acceptOffer()}
+                ></mwc-button>
+              </div>
+            `}
       </div>
     `;
   }

@@ -66,21 +66,21 @@ export class MCTransactionList extends moduleConnect(LitElement) {
       </div>`;
 
     return html`
-      <mwc-list>
+      <mwc-list style="width: 100%;">
         ${this.transactions.map(
           (transaction) => html`
             <mwc-list-item twoline noninteractive>
               <span>
                 ${this.isOutgoing(transaction) ? 'To ' : 'From '}
-                @${this.getCounterparty(transaction).username}
-                (${this.getCounterparty(transaction).id}):
+                @${this.getCounterparty(transaction).username}:
                 ${`${this.isOutgoing(transaction) ? '-' : '+'}${
                   transaction.amount
                 }`}
                 credits
               </span>
               <span slot="secondary"
-                >${new Date(
+                >${this.getCounterparty(transaction).id}) on
+                ${new Date(
                   transaction.timestamp * 1000
                 ).toLocaleDateString()}</span
               >

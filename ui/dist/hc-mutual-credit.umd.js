@@ -174,14 +174,21 @@
         firstUpdated() {
             this.client = this.request(graphql.ApolloClientModule.bindings.Client);
         }
-        createOffer() {
-            this.client.mutate({
+        async createOffer() {
+            const creditorId = this.creditorField.value;
+            const amount = parseFloat(this.amountField.value);
+            await this.client.mutate({
                 mutation: CREATE_OFFER,
                 variables: {
-                    creditorId: this.creditorField.value,
-                    amount: parseFloat(this.amountField.value),
+                    creditorId,
+                    amount,
                 },
             });
+            this.dispatchEvent(new CustomEvent('offer-created', {
+                detail: { creditorId, amount },
+                composed: true,
+                bubbles: true,
+            }));
         }
         render() {
             return litElement.html `
@@ -348,18 +355,18 @@
         <span>You have no transactions in your history</span>
       </div>`;
             return litElement.html `
-      <mwc-list>
+      <mwc-list style="width: 100%;">
         ${this.transactions.map((transaction) => litElement.html `
             <mwc-list-item twoline noninteractive>
               <span>
                 ${this.isOutgoing(transaction) ? 'To ' : 'From '}
-                @${this.getCounterparty(transaction).username}
-                (${this.getCounterparty(transaction).id}):
+                @${this.getCounterparty(transaction).username}:
                 ${`${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount}`}
                 credits
               </span>
               <span slot="secondary"
-                >${new Date(transaction.timestamp * 1000).toLocaleDateString()}</span
+                >${this.getCounterparty(transaction).id}) on
+                ${new Date(transaction.timestamp * 1000).toLocaleDateString()}</span
               >
             </mwc-list-item>
             <mwc-list-divider></mwc-list-divider>
@@ -590,21 +597,24 @@
             return litElement.html `
       <div class="column">
         ${this.renderCounterparty()}
-
-        <div class="row" style="margin-top: 4px;">
-          <mwc-button
-            label="DECLINE"
-            style="flex: 1;"
-            @click=${() => this.acceptOffer()}
-          ></mwc-button>
-          <mwc-button
-            style="flex: 1;"
-            .disabled=${!this.offer.counterpartySnapshot.executable}
-            label="ACCEPT"
-            raised
-            @click=${() => this.acceptOffer()}
-          ></mwc-button>
-        </div>
+        ${this.isOutgoing()
+            ? litElement.html `<span>Awaiting for approval</span>`
+            : litElement.html `
+              <div class="row" style="margin-top: 4px;">
+                <mwc-button
+                  label="DECLINE"
+                  style="flex: 1;"
+                  @click=${() => this.acceptOffer()}
+                ></mwc-button>
+                <mwc-button
+                  style="flex: 1;"
+                  .disabled=${!this.offer.counterpartySnapshot.executable}
+                  label="ACCEPT"
+                  raised
+                  @click=${() => this.acceptOffer()}
+                ></mwc-button>
+              </div>
+            `}
       </div>
     `;
         }
@@ -701,7 +711,7 @@
       </div>`;
             return litElement.html `
       ${this.renderCreateOffer()}
-      <mwc-list>
+      <mwc-list style="width: 100%;">
         ${this.agents.map((agent, i) => litElement.html `${this.renderAgent(agent)}
           ${this.agents && i < this.agents.length - 1
             ? litElement.html `<li divider padded role="separator"></li> `

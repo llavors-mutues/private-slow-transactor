@@ -15,7 +15,7 @@ export declare class MCCreateOffer extends MCCreateOffer_base {
     client: ApolloClient<any>;
     static get styles(): import("lit-element").CSSResult;
     firstUpdated(): void;
-    createOffer(): void;
+    createOffer(): Promise<void>;
     render(): import("lit-element").TemplateResult;
 }
 export {};

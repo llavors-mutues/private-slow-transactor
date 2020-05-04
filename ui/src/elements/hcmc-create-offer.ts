@@ -32,14 +32,24 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
     this.client = this.request(ApolloClientModule.bindings.Client);
   }
 
-  createOffer() {
-    this.client.mutate({
+  async createOffer() {
+    const creditorId = this.creditorField.value;
+    const amount = parseFloat(this.amountField.value);
+    await this.client.mutate({
       mutation: CREATE_OFFER,
       variables: {
-        creditorId: this.creditorField.value,
-        amount: parseFloat(this.amountField.value),
+        creditorId,
+        amount,
       },
     });
+
+    this.dispatchEvent(
+      new CustomEvent('offer-created', {
+        detail: { creditorId, amount },
+        composed: true,
+        bubbles: true,
+      })
+    );
   }
 
   render() {
