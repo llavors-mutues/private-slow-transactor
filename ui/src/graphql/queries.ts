@@ -8,6 +8,9 @@ export const GET_MY_BALANCE = gql`
 
 export const GET_MY_TRANSACTIONS = gql`
   query GetMyTransactions {
+    me {
+      id
+    }
     myTransactions {
       id
       debtor {

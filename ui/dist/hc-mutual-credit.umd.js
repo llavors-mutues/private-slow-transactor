@@ -39,6 +39,9 @@
 `;
     const GET_MY_TRANSACTIONS = gql `
   query GetMyTransactions {
+    me {
+      id
+    }
     myTransactions {
       id
       debtor {
@@ -309,7 +312,16 @@
             const result = await client.query({
                 query: GET_MY_TRANSACTIONS,
             });
+            this.myAgentId = result.data.me.id;
             this.transactions = result.data.myTransactions;
+        }
+        isOutgoing(transaction) {
+            return transaction.debtor.id === this.myAgentId;
+        }
+        getCounterparty(transaction) {
+            return transaction.creditor.id === this.myAgentId
+                ? transaction.debtor
+                : transaction.creditor;
         }
         render() {
             if (!this.transactions)
@@ -317,9 +329,17 @@
             return litElement.html `
       <mwc-list>
         ${this.transactions.map((transaction) => litElement.html `
-            <mwc-list-item>
-              ${transaction.debtor.id} => ${transaction.creditor.id},
-              ${transaction.amount}
+            <mwc-list-item twoline>
+              <span>
+                ${this.isOutgoing(transaction) ? 'To ' : 'From '}
+                @${this.getCounterparty(transaction).username}
+                (${this.getCounterparty(transaction).id}):
+                ${`${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount}`}
+                credits
+              </span>
+              <span slot="secondary"
+                >${new Date(transaction.timestamp * 1000).toLocaleDateString()}</span
+              >
             </mwc-list-item>
             <mwc-list-divider></mwc-list-divider>
           `)}
@@ -327,6 +347,10 @@
     `;
         }
     }
+    __decorate([
+        litElement.property({ type: String }),
+        __metadata("design:type", String)
+    ], MCTransactionList.prototype, "myAgentId", void 0);
     __decorate([
         litElement.property({ type: Object, attribute: false }),
         __metadata("design:type", Array)

@@ -46,6 +46,9 @@ const GET_MY_BALANCE = gql `
 `;
 const GET_MY_TRANSACTIONS = gql `
   query GetMyTransactions {
+    me {
+      id
+    }
     myTransactions {
       id
       debtor {
@@ -316,7 +319,16 @@ class MCTransactionList extends moduleConnect(LitElement) {
         const result = await client.query({
             query: GET_MY_TRANSACTIONS,
         });
+        this.myAgentId = result.data.me.id;
         this.transactions = result.data.myTransactions;
+    }
+    isOutgoing(transaction) {
+        return transaction.debtor.id === this.myAgentId;
+    }
+    getCounterparty(transaction) {
+        return transaction.creditor.id === this.myAgentId
+            ? transaction.debtor
+            : transaction.creditor;
     }
     render() {
         if (!this.transactions)
@@ -324,9 +336,17 @@ class MCTransactionList extends moduleConnect(LitElement) {
         return html `
       <mwc-list>
         ${this.transactions.map((transaction) => html `
-            <mwc-list-item>
-              ${transaction.debtor.id} => ${transaction.creditor.id},
-              ${transaction.amount}
+            <mwc-list-item twoline>
+              <span>
+                ${this.isOutgoing(transaction) ? 'To ' : 'From '}
+                @${this.getCounterparty(transaction).username}
+                (${this.getCounterparty(transaction).id}):
+                ${`${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount}`}
+                credits
+              </span>
+              <span slot="secondary"
+                >${new Date(transaction.timestamp * 1000).toLocaleDateString()}</span
+              >
             </mwc-list-item>
             <mwc-list-divider></mwc-list-divider>
           `)}
@@ -334,6 +354,10 @@ class MCTransactionList extends moduleConnect(LitElement) {
     `;
     }
 }
+__decorate([
+    property({ type: String }),
+    __metadata("design:type", String)
+], MCTransactionList.prototype, "myAgentId", void 0);
 __decorate([
     property({ type: Object, attribute: false }),
     __metadata("design:type", Array)
