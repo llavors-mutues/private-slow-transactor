@@ -43,9 +43,11 @@
       id
       debtor {
         id
+        username
       }
       creditor {
         id
+        username
       }
       amount
       timestamp
@@ -54,15 +56,20 @@
 `;
     const GET_PENDING_OFFERS = gql `
   query GetPendingOffers {
+    me {
+      id
+    }
     myOffers {
       id
       transaction {
         id
         debtor {
           id
+          username
         }
         creditor {
           id
+          username
         }
         amount
         timestamp
@@ -73,15 +80,21 @@
 `;
     const GET_OFFER_DETAIL = gql `
   query GetOfferDetail($transactionId: String!) {
+    me {
+      id
+    }
+    
     offer(transactionId: $transactionId) {
       id
       transaction {
         id
         debtor {
           id
+          username
         }
         creditor {
           id
+          username
         }
         amount
         timestamp
@@ -131,11 +144,20 @@
     justify-content: center;
     align-items: center;
   }
+
+  .item {
+    margin-bottom: 8px;
+  }
+  .title {
+    font-weight: bold;
+    font-size: 18px;
+  }
 `;
 
     class MCCreateOffer extends microOrchestrator.moduleConnect(litElement.LitElement) {
         constructor() {
             super(...arguments);
+            this.open = false;
             this.creditor = undefined;
         }
         static get styles() {
@@ -193,6 +215,10 @@
         __metadata("design:type", mwcTextfieldBase.TextFieldBase)
     ], MCCreateOffer.prototype, "creditorField", void 0);
     __decorate([
+        litElement.property({ type: Boolean }),
+        __metadata("design:type", Boolean)
+    ], MCCreateOffer.prototype, "open", void 0);
+    __decorate([
         litElement.property({ type: String }),
         __metadata("design:type", Object)
     ], MCCreateOffer.prototype, "creditor", void 0);
@@ -206,8 +232,13 @@
             const result = await this.client.query({
                 query: GET_PENDING_OFFERS,
             });
-            console.log(result);
-            this.offers = result.data.myOffers;
+            this.myAgentId = result.data.me.id;
+            this.offers = result.data.myOffers.filter((o) => o.state !== 'Completed');
+        }
+        renderPlaceholder(type) {
+            return litElement.html `<span style="padding-top: 16px;"
+      >You have no ${type.toLowerCase()} offers</span
+    >`;
         }
         offerSelected(transactionId) {
             this.dispatchEvent(new CustomEvent('offer-selected', {
@@ -217,29 +248,56 @@
         getPendingOffers() {
             return this.offers.filter((offer) => offer.state !== 'Completed');
         }
+        getOutgoing() {
+            return this.offers.filter((offer) => offer.transaction.debtor.id === this.myAgentId);
+        }
+        getIncoming() {
+            return this.offers.filter((offer) => offer.transaction.creditor.id === this.myAgentId);
+        }
+        counterparty(offer) {
+            return offer.transaction.creditor.id === this.myAgentId
+                ? offer.transaction.debtor
+                : offer.transaction.creditor;
+        }
+        renderOfferList(title, offers) {
+            return litElement.html `<div class="column" style="margin-bottom: 24px;">
+      <span class="title">${title}</span>
+
+      ${offers.length === 0
+            ? this.renderPlaceholder(title)
+            : litElement.html `
+            <mwc-list>
+              ${offers.map((offer) => litElement.html `
+                  <mwc-list-item
+                    @click=${() => this.offerSelected(offer.id)}
+                    twoline
+                  >
+                    <span>
+                      @${this.counterparty(offer).username}
+                      ${offer.transaction.amount} credits
+                    </span>
+                    <span slot="secondary">
+                      ${new Date(offer.transaction.timestamp * 1000).toLocaleDateString()}
+                    </span>
+                  </mwc-list-item>
+                `)}
+            </mwc-list>
+          `}
+    </div>`;
+        }
         render() {
             if (!this.offers)
                 return litElement.html `<mwc-circular-progress></mwc-circular-progress>`;
-            const pendingOffers = this.getPendingOffers();
-            return litElement.html `
-      <mwc-list>
-        ${pendingOffers.map((offer) => litElement.html `
-            <mwc-list-item @click=${() => this.offerSelected(offer.id)}>
-              <div class="column">
-                <span>
-                  ${offer.transaction.debtor.id} =>
-                  ${offer.transaction.creditor.id}
-                </span>
-                <span>
-                  ${offer.transaction.amount}
-                </span>
-              </div>
-            </mwc-list-item>
-          `)}
-      </mwc-list>
-    `;
+            return litElement.html `<div class="column">
+      ${this.renderOfferList('Incoming', this.getIncoming())}
+      ${this.renderOfferList('Outgoing', this.getOutgoing())}
+    </div>`;
         }
     }
+    __decorate([
+        litElement.property({ type: String }),
+        __metadata("design:type", String)
+    ], MCPendingOfferList.prototype, "myAgentId", void 0);
     __decorate([
         litElement.property({ type: Object, attribute: false }),
         __metadata("design:type", Array)
@@ -425,6 +483,7 @@
                 },
             });
             this.offer = result.data.offer;
+            this.myAgentId = result.data.me.id;
         }
         acceptOffer() {
             this.client.mutate({
@@ -435,17 +494,72 @@
                 },
             });
         }
+        isOutgoing() {
+            return this.offer.transaction.debtor.id === this.myAgentId;
+        }
+        getCounterparty() {
+            return this.offer.transaction.creditor.id === this.myAgentId
+                ? this.offer.transaction.debtor
+                : this.offer.transaction.creditor;
+        }
+        renderCounterparty() {
+            const cUsername = `@${this.getCounterparty().username}`;
+            return litElement.html `
+      <div class="row">
+        <div class="column">
+          <span class="item title">
+            Offer ${this.isOutgoing() ? ' to ' : ' from '} ${cUsername}
+          </span>
+          <span class="item">Agend ID: ${this.getCounterparty().id}</span>
+
+          <span class="item">
+            Transaction amount: ${this.offer.transaction.amount} credits
+          </span>
+          <span class="item">
+            Date:
+            ${new Date(this.offer.transaction.timestamp * 1000).toLocaleDateString()}
+          </span>
+
+          <span class="item title" style="margin-top: 8px;"
+            >${cUsername} current status</span
+          >
+
+          <span class="item">
+            Balance: ${this.offer.counterpartySnapshot.balance} credits
+          </span>
+          <span class="item">
+            Transaction history is
+            ${this.offer.counterpartySnapshot.valid ? 'valid' : 'invalid'}
+          </span>
+          <span class="item">
+            Offer is ${this.offer.counterpartySnapshot.executable ? '' : 'not'}
+            executable right now
+          </span>
+        </div>
+      </div>
+    `;
+        }
         render() {
             if (!this.offer)
                 return litElement.html `<mwc-circular-progress></mwc-circular-progress>`;
             return litElement.html `
       <div class="column">
-        <span>${this.offer.counterpartySnapshot.balance}</span>
-        <mwc-button
-          .disabled=${!this.offer.counterpartySnapshot.executable}
-          label="ACCEPT"
-          @click=${() => this.acceptOffer()}
-        ></mwc-button>
+        ${this.renderCounterparty()}
+
+        <div class="row" style="margin-top: 4px;">
+          <mwc-button
+            label="DECLINE"
+            style="flex: 1;"
+            @click=${() => this.acceptOffer()}
+          ></mwc-button>
+          <mwc-button
+            style="flex: 1;"
+            .disabled=${!this.offer.counterpartySnapshot.executable}
+            label="ACCEPT"
+            raised
+            @click=${() => this.acceptOffer()}
+          ></mwc-button>
+        </div>
       </div>
     `;
         }
@@ -454,6 +568,10 @@
         litElement.property({ type: String }),
         __metadata("design:type", String)
     ], MCOfferDetail.prototype, "transactionId", void 0);
+    __decorate([
+        litElement.property({ type: String }),
+        __metadata("design:type", String)
+    ], MCOfferDetail.prototype, "myAgentId", void 0);
     __decorate([
         litElement.property({ type: Object }),
         __metadata("design:type", Object)
@@ -473,7 +591,7 @@
         return result.data.allAgents;
     };
 
-    class MCAgentList extends microOrchestrator.moduleConnect(litElement.LitElement) {
+    class MCAllowedCreditorList extends microOrchestrator.moduleConnect(litElement.LitElement) {
         constructor() {
             super(...arguments);
             this.selectedCreditor = undefined;
@@ -503,6 +621,7 @@
 
         <mwc-button
           label="Offer credits"
+          style="padding-right: 16px;"
           @click=${() => {
             this.selectedCreditor = agent.id;
             this.createOfferDialog.open = true;
@@ -528,15 +647,15 @@
     __decorate([
         litElement.query('#create-offer-dialog'),
         __metadata("design:type", mwcDialog.Dialog)
-    ], MCAgentList.prototype, "createOfferDialog", void 0);
+    ], MCAllowedCreditorList.prototype, "createOfferDialog", void 0);
     __decorate([
         litElement.property({ type: String }),
         __metadata("design:type", Object)
-    ], MCAgentList.prototype, "selectedCreditor", void 0);
+    ], MCAllowedCreditorList.prototype, "selectedCreditor", void 0);
     __decorate([
         litElement.property({ type: Array }),
         __metadata("design:type", Object)
-    ], MCAgentList.prototype, "agents", void 0);
+    ], MCAllowedCreditorList.prototype, "agents", void 0);
 
     class MutualCreditModule extends microOrchestrator.MicroModule {
         constructor(instance, agentFilter = allAgentsAllowed) {
@@ -557,7 +676,7 @@
             customElements.define('hcmc-create-offer', MCCreateOffer);
             customElements.define('hcmc-pending-offer-list', MCPendingOfferList);
             customElements.define('hcmc-offer-detail', MCOfferDetail);
-            customElements.define('hcmc-agent-list', MCAgentList);
+            customElements.define('hcmc-allowed-creditor-list', MCAllowedCreditorList);
         }
         get submodules() {
             return [

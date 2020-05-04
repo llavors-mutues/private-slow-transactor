@@ -17,7 +17,7 @@ import { MutualCreditBindings } from './bindings';
 import { resolvers } from './graphql/resolvers';
 import { MCOfferDetail } from './elements/hcmc-offer-detail';
 import { GetAllowedCreditors, allAgentsAllowed } from './types';
-import { MCAgentList } from './elements/hcmc-agent-list';
+import { MCAllowedCreditorList } from './elements/hcmc-allowed-creditor-list';
 
 export class MutualCreditModule extends MicroModule {
   static id = 'mutual-credit-module';
@@ -51,7 +51,7 @@ export class MutualCreditModule extends MicroModule {
     customElements.define('hcmc-create-offer', MCCreateOffer);
     customElements.define('hcmc-pending-offer-list', MCPendingOfferList);
     customElements.define('hcmc-offer-detail', MCOfferDetail);
-    customElements.define('hcmc-agent-list', MCAgentList);
+    customElements.define('hcmc-allowed-creditor-list', MCAllowedCreditorList);
   }
 
   get submodules() {

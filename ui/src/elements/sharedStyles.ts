@@ -19,4 +19,12 @@ export const sharedStyles = css`
     justify-content: center;
     align-items: center;
   }
+
+  .item {
+    margin-bottom: 8px;
+  }
+  .title {
+    font-weight: bold;
+    font-size: 18px;
+  }
 `;

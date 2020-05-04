@@ -10,6 +10,7 @@ declare const MCCreateOffer_base: {
 export declare class MCCreateOffer extends MCCreateOffer_base {
     amountField: TextFieldBase;
     creditorField: TextFieldBase;
+    open: boolean;
     creditor: string | undefined;
     client: ApolloClient<any>;
     static get styles(): import("lit-element").CSSResult;

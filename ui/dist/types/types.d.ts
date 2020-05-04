@@ -6,8 +6,8 @@ export interface Transaction {
     id: string;
     debtor: Agent;
     creditor: Agent;
-    amount: Number;
-    timestamp: Number;
+    amount: number;
+    timestamp: number;
 }
 export interface CounterpartySnapshot {
     valid: boolean;

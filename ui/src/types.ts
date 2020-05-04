@@ -25,8 +25,8 @@ export interface Transaction {
 
   debtor: Agent;
   creditor: Agent;
-  amount: Number;
-  timestamp: Number;
+  amount: number;
+  timestamp: number;
 }
 
 export interface CounterpartySnapshot {

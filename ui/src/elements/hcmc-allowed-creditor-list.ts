@@ -10,7 +10,7 @@ import { MutualCreditBindings } from '../bindings';
 import { GetAllowedCreditors } from '../types';
 import { sharedStyles } from './sharedStyles';
 
-export class MCAgentList extends moduleConnect(LitElement) {
+export class MCAllowedCreditorList extends moduleConnect(LitElement) {
   @query('#create-offer-dialog')
   createOfferDialog!: Dialog;
 
@@ -53,6 +53,7 @@ export class MCAgentList extends moduleConnect(LitElement) {
 
         <mwc-button
           label="Offer credits"
+          style="padding-right: 16px;"
           @click=${() => {
             this.selectedCreditor = agent.id;
             this.createOfferDialog.open = true;

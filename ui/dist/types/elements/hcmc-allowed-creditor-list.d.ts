@@ -2,11 +2,11 @@ import { LitElement } from 'lit-element';
 import { ApolloClient } from 'apollo-boost';
 import { Agent } from 'holochain-profiles';
 import { Dialog } from '@material/mwc-dialog';
-declare const MCAgentList_base: {
+declare const MCAllowedCreditorList_base: {
     new (...args: any[]): import("@uprtcl/micro-orchestrator").ConnectedElement;
     prototype: any;
 } & typeof LitElement;
-export declare class MCAgentList extends MCAgentList_base {
+export declare class MCAllowedCreditorList extends MCAllowedCreditorList_base {
     createOfferDialog: Dialog;
     selectedCreditor: string | undefined;
     agents: Agent[] | undefined;

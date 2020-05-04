@@ -16,6 +16,9 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
   @query('#creditor')
   creditorField!: TextFieldBase;
 
+  @property({ type: Boolean })
+  open: boolean = false;
+
   @property({ type: String })
   creditor: string | undefined = undefined;
 

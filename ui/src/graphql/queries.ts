@@ -12,9 +12,11 @@ export const GET_MY_TRANSACTIONS = gql`
       id
       debtor {
         id
+        username
       }
       creditor {
         id
+        username
       }
       amount
       timestamp
@@ -24,15 +26,20 @@ export const GET_MY_TRANSACTIONS = gql`
 
 export const GET_PENDING_OFFERS = gql`
   query GetPendingOffers {
+    me {
+      id
+    }
     myOffers {
       id
       transaction {
         id
         debtor {
           id
+          username
         }
         creditor {
           id
+          username
         }
         amount
         timestamp
@@ -44,15 +51,21 @@ export const GET_PENDING_OFFERS = gql`
 
 export const GET_OFFER_DETAIL = gql`
   query GetOfferDetail($transactionId: String!) {
+    me {
+      id
+    }
+    
     offer(transactionId: $transactionId) {
       id
       transaction {
         id
         debtor {
           id
+          username
         }
         creditor {
           id
+          username
         }
         amount
         timestamp
