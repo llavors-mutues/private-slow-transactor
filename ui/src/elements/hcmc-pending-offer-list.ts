@@ -1,4 +1,4 @@
-import { LitElement, html, property } from 'lit-element';
+import { LitElement, html, property, css } from 'lit-element';
 import { ApolloClient } from 'apollo-boost';
 import { moduleConnect } from '@uprtcl/micro-orchestrator';
 import { ApolloClientModule } from '@uprtcl/graphql';
@@ -21,7 +21,14 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
   offers!: Offer[];
 
   static get styles() {
-    return sharedStyles;
+    return [
+      sharedStyles,
+      css`
+        :host {
+          display: flex;
+        }
+      `,
+    ];
   }
 
   async firstUpdated() {
@@ -73,7 +80,7 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
   }
 
   renderOfferList(title: string, offers: Offer[]) {
-    return html`<div class="column" style="margin-bottom: 24px;">
+    return html`<div class="column " style="margin-bottom: 24px;">
       <span class="title">${title} offers</span>
 
       ${offers.length === 0
@@ -105,9 +112,11 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
 
   render() {
     if (!this.offers)
-      return html`<mwc-circular-progress></mwc-circular-progress>`;
+      return html`<div class="column fill center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+      </div>`;
 
-    return html`<div class="column">
+    return html`<div class="column fill">
       ${this.renderOfferList('Incoming', this.getIncoming())}
       ${this.renderOfferList('Outgoing', this.getOutgoing())}
     </div>`;

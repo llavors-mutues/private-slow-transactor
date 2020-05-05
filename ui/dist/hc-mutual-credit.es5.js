@@ -253,7 +253,14 @@ __decorate([
 
 class MCPendingOfferList extends moduleConnect(LitElement) {
     static get styles() {
-        return sharedStyles;
+        return [
+            sharedStyles,
+            css `
+        :host {
+          display: flex;
+        }
+      `,
+        ];
     }
     async firstUpdated() {
         this.client = this.request(ApolloClientModule.bindings.Client);
@@ -289,7 +296,7 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
             : offer.transaction.creditor;
     }
     renderOfferList(title, offers) {
-        return html `<div class="column" style="margin-bottom: 24px;">
+        return html `<div class="column " style="margin-bottom: 24px;">
       <span class="title">${title} offers</span>
 
       ${offers.length === 0
@@ -316,8 +323,10 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
     }
     render() {
         if (!this.offers)
-            return html `<mwc-circular-progress></mwc-circular-progress>`;
-        return html `<div class="column">
+            return html `<div class="column fill center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+      </div>`;
+        return html `<div class="column fill">
       ${this.renderOfferList('Incoming', this.getIncoming())}
       ${this.renderOfferList('Outgoing', this.getOutgoing())}
     </div>`;
@@ -340,7 +349,7 @@ class MCTransactionList extends moduleConnect(LitElement) {
         const client = this.request(ApolloClientModule.bindings.Client);
         const result = await client.query({
             query: GET_MY_TRANSACTIONS,
-            fetchPolicy: 'network-only'
+            fetchPolicy: 'network-only',
         });
         this.myAgentId = result.data.me.id;
         this.transactions = result.data.myTransactions;
@@ -371,7 +380,7 @@ class MCTransactionList extends moduleConnect(LitElement) {
       </div>`;
         return html `
       <mwc-list style="width: 100%;">
-        ${this.transactions.map((transaction) => html `
+        ${this.transactions.map((transaction, i) => html `
             <mwc-list-item twoline noninteractive>
               <span>
                 ${this.isOutgoing(transaction) ? 'To ' : 'From '}
@@ -384,7 +393,9 @@ class MCTransactionList extends moduleConnect(LitElement) {
                 ${new Date(transaction.timestamp * 1000).toLocaleDateString()}</span
               >
             </mwc-list-item>
-            <mwc-list-divider></mwc-list-divider>
+            ${i < this.transactions.length - 1
+            ? html `<li divider padded role="separator"></li> `
+            : html ``}
           `)}
       </mwc-list>
     `;
@@ -545,14 +556,21 @@ class MCOfferDetail extends moduleConnect(LitElement) {
     static get styles() {
         return sharedStyles;
     }
-    async firstUpdated() {
+    updated(changedValues) {
+        super.updated(changedValues);
+        if (changedValues.has('transactionId')) {
+            this.loadOffer();
+        }
+    }
+    async loadOffer() {
+        this.offer = undefined;
         this.client = this.request(ApolloClientModule.bindings.Client);
         const result = await this.client.query({
             query: GET_OFFER_DETAIL,
             variables: {
                 transactionId: this.transactionId,
             },
-            fetchPolicy: 'network-only'
+            fetchPolicy: 'network-only',
         });
         this.offer = result.data.offer;
         this.myAgentId = result.data.me.id;
@@ -622,8 +640,15 @@ class MCOfferDetail extends moduleConnect(LitElement) {
     `;
     }
     render() {
-        if (!this.offer)
-            return html `<mwc-circular-progress></mwc-circular-progress>`;
+        if (!this.offer || this.accepting)
+            return html `<div class="column fill center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+        <span style="margin-top: 12px;"
+          >${this.accepting
+                ? 'Accepting offer...'
+                : 'Fetching and verifying counterparty chain...'}</span
+        >
+      </div>`;
         return html `
       <div class="column">
         ${this.renderCounterparty()}

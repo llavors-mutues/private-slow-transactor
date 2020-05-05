@@ -77,6 +77,11 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
+    pub fn cancel_offer(transaction_address: Address) -> ZomeApiResult<()> {
+        offer::cancel_offer(&transaction_address)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn accept_offer(
         transaction_address: Address,
         approved_header_address: Address,
@@ -91,7 +96,10 @@ mod transactor {
     pub fn query_my_balance() -> ZomeApiResult<MyBalance> {
         let transactions_with_addresses = transaction::get_my_completed_transactions()?;
 
-        let transactions = transactions_with_addresses.into_iter().map(|t| t.1).collect();
+        let transactions = transactions_with_addresses
+            .into_iter()
+            .map(|t| t.1)
+            .collect();
 
         let balance = transaction::compute_balance(&hdk::AGENT_ADDRESS.clone(), &transactions);
         Ok(MyBalance(balance))

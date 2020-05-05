@@ -1,4 +1,4 @@
-import { LitElement } from 'lit-element';
+import { LitElement, PropertyValues } from 'lit-element';
 import { Offer } from 'src/types';
 import { ApolloClient } from 'apollo-boost';
 import { Agent } from 'holochain-profiles';
@@ -13,7 +13,8 @@ export declare class MCOfferDetail extends MCOfferDetail_base {
     accepting: boolean;
     client: ApolloClient<any>;
     static get styles(): import("lit-element").CSSResult;
-    firstUpdated(): Promise<void>;
+    updated(changedValues: PropertyValues): void;
+    loadOffer(): Promise<void>;
     acceptOffer(): void;
     isOutgoing(): boolean;
     getCounterparty(): Agent;

@@ -1,5 +1,5 @@
 import { moduleConnect } from '@uprtcl/micro-orchestrator';
-import { LitElement, html, property, css } from 'lit-element';
+import { LitElement, html, property, css, PropertyValues } from 'lit-element';
 import { sharedStyles } from './sharedStyles';
 import { Offer } from 'src/types';
 import { ApolloClientModule } from '@uprtcl/graphql';
@@ -26,7 +26,16 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     return sharedStyles;
   }
 
-  async firstUpdated() {
+  updated(changedValues: PropertyValues) {
+    super.updated(changedValues);
+
+    if (changedValues.has('transactionId')) {
+      this.loadOffer();
+    }
+  }
+
+  async loadOffer() {
+    this.offer = undefined as any;
     this.client = this.request(ApolloClientModule.bindings.Client);
 
     const result = await this.client.query({
@@ -34,7 +43,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       variables: {
         transactionId: this.transactionId,
       },
-      fetchPolicy: 'network-only'
+      fetchPolicy: 'network-only',
     });
 
     this.offer = result.data.offer;
@@ -115,8 +124,15 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
   }
 
   render() {
-    if (!this.offer)
-      return html`<mwc-circular-progress></mwc-circular-progress>`;
+    if (!this.offer || this.accepting)
+      return html`<div class="column fill center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+        <span style="margin-top: 18px;"
+          >${this.accepting
+            ? 'Accepting offer...'
+            : 'Fetching and verifying counterparty chain...'}</span
+        >
+      </div>`;
 
     return html`
       <div class="column">

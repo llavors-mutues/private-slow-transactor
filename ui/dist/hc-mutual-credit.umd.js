@@ -247,7 +247,14 @@
 
     class MCPendingOfferList extends microOrchestrator.moduleConnect(litElement.LitElement) {
         static get styles() {
-            return sharedStyles;
+            return [
+                sharedStyles,
+                litElement.css `
+        :host {
+          display: flex;
+        }
+      `,
+            ];
         }
         async firstUpdated() {
             this.client = this.request(graphql.ApolloClientModule.bindings.Client);
@@ -283,7 +290,7 @@
                 : offer.transaction.creditor;
         }
         renderOfferList(title, offers) {
-            return litElement.html `<div class="column" style="margin-bottom: 24px;">
+            return litElement.html `<div class="column " style="margin-bottom: 24px;">
       <span class="title">${title} offers</span>
 
       ${offers.length === 0
@@ -310,8 +317,10 @@
         }
         render() {
             if (!this.offers)
-                return litElement.html `<mwc-circular-progress></mwc-circular-progress>`;
-            return litElement.html `<div class="column">
+                return litElement.html `<div class="column fill center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+      </div>`;
+            return litElement.html `<div class="column fill">
       ${this.renderOfferList('Incoming', this.getIncoming())}
       ${this.renderOfferList('Outgoing', this.getOutgoing())}
     </div>`;
@@ -334,7 +343,7 @@
             const client = this.request(graphql.ApolloClientModule.bindings.Client);
             const result = await client.query({
                 query: GET_MY_TRANSACTIONS,
-                fetchPolicy: 'network-only'
+                fetchPolicy: 'network-only',
             });
             this.myAgentId = result.data.me.id;
             this.transactions = result.data.myTransactions;
@@ -365,7 +374,7 @@
       </div>`;
             return litElement.html `
       <mwc-list style="width: 100%;">
-        ${this.transactions.map((transaction) => litElement.html `
+        ${this.transactions.map((transaction, i) => litElement.html `
             <mwc-list-item twoline noninteractive>
               <span>
                 ${this.isOutgoing(transaction) ? 'To ' : 'From '}
@@ -378,7 +387,9 @@
                 ${new Date(transaction.timestamp * 1000).toLocaleDateString()}</span
               >
             </mwc-list-item>
-            <mwc-list-divider></mwc-list-divider>
+            ${i < this.transactions.length - 1
+            ? litElement.html `<li divider padded role="separator"></li> `
+            : litElement.html ``}
           `)}
       </mwc-list>
     `;
@@ -539,14 +550,21 @@
         static get styles() {
             return sharedStyles;
         }
-        async firstUpdated() {
+        updated(changedValues) {
+            super.updated(changedValues);
+            if (changedValues.has('transactionId')) {
+                this.loadOffer();
+            }
+        }
+        async loadOffer() {
+            this.offer = undefined;
             this.client = this.request(graphql.ApolloClientModule.bindings.Client);
             const result = await this.client.query({
                 query: GET_OFFER_DETAIL,
                 variables: {
                     transactionId: this.transactionId,
                 },
-                fetchPolicy: 'network-only'
+                fetchPolicy: 'network-only',
             });
             this.offer = result.data.offer;
             this.myAgentId = result.data.me.id;
@@ -616,8 +634,15 @@
     `;
         }
         render() {
-            if (!this.offer)
-                return litElement.html `<mwc-circular-progress></mwc-circular-progress>`;
+            if (!this.offer || this.accepting)
+                return litElement.html `<div class="column fill center-content">
+        <mwc-circular-progress></mwc-circular-progress>
+        <span style="margin-top: 12px;"
+          >${this.accepting
+                ? 'Accepting offer...'
+                : 'Fetching and verifying counterparty chain...'}</span
+        >
+      </div>`;
             return litElement.html `
       <div class="column">
         ${this.renderCounterparty()}

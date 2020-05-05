@@ -30,7 +30,7 @@ export class MCTransactionList extends moduleConnect(LitElement) {
     );
     const result = await client.query({
       query: GET_MY_TRANSACTIONS,
-      fetchPolicy: 'network-only'
+      fetchPolicy: 'network-only',
     });
 
     this.myAgentId = result.data.me.id;
@@ -69,7 +69,7 @@ export class MCTransactionList extends moduleConnect(LitElement) {
     return html`
       <mwc-list style="width: 100%;">
         ${this.transactions.map(
-          (transaction) => html`
+          (transaction, i) => html`
             <mwc-list-item twoline noninteractive>
               <span>
                 ${this.isOutgoing(transaction) ? 'To ' : 'From '}
@@ -86,7 +86,9 @@ export class MCTransactionList extends moduleConnect(LitElement) {
                 ).toLocaleDateString()}</span
               >
             </mwc-list-item>
-            <mwc-list-divider></mwc-list-divider>
+            ${i < this.transactions.length - 1
+              ? html`<li divider padded role="separator"></li> `
+              : html``}
           `
         )}
       </mwc-list>
