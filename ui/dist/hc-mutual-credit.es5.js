@@ -186,6 +186,19 @@ class MCCreateOffer extends moduleConnect(LitElement) {
     }
     firstUpdated() {
         this.client = this.request(ApolloClientModule.bindings.Client);
+        this.amountField.validityTransform = (newValue) => {
+            this.requestUpdate();
+            try {
+                const amount = parseFloat(newValue);
+                if (amount > 0)
+                    return { valid: true };
+            }
+            catch (e) { }
+            this.amountField.setCustomValidity(`Offer amount has to be greater than 0`);
+            return {
+                valid: false,
+            };
+        };
     }
     async createOffer() {
         const creditorId = this.creditorField.value;
@@ -205,18 +218,12 @@ class MCCreateOffer extends moduleConnect(LitElement) {
     }
     render() {
         return html `
-      <mwc-dialog .open=${this.open} @closed=${() => (this.open = false)}>
+      <mwc-dialog
+        .open=${this.open}
+        @closed=${() => (this.open = false)}
+        heading="Create new "
+      >
         <div class="column center-content">
-          <mwc-textfield
-            style="padding: 16px 0;"
-            label="Amount"
-            type="number"
-            id="amount"
-            min="0.1"
-            step="0.1"
-            autoValidate
-          ></mwc-textfield>
-
           <mwc-textfield
             .disabled=${this.creditor !== undefined}
             .value=${this.creditor}
@@ -226,17 +233,28 @@ class MCCreateOffer extends moduleConnect(LitElement) {
             autoValidate
           ></mwc-textfield>
 
-          <mwc-button slot="secondaryAction" dialogAction="cancel">
-            Cancel
-          </mwc-button>
-          <mwc-button
-            slot="primaryAction"
-            @click=${() => this.createOffer()}
-            dialogAction="create"
-          >
-            Create Offer
-          </mwc-button>
+          <mwc-textfield
+            style="padding: 16px 0;"
+            label="Amount"
+            type="number"
+            id="amount"
+            min="0.1"
+            step="0.1"
+            autoValidate
+          ></mwc-textfield>
         </div>
+
+        <mwc-button slot="secondaryAction" dialogAction="cancel">
+          Cancel
+        </mwc-button>
+        <mwc-button
+          .disabled=${this.amountField.validity.valid}
+          slot="primaryAction"
+          @click=${() => this.createOffer()}
+          dialogAction="create"
+        >
+          Create Offer
+        </mwc-button>
       </mwc-dialog>
     `;
     }
