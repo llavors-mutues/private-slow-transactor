@@ -215,13 +215,13 @@
       <mwc-dialog
         .open=${this.open}
         @closed=${() => (this.open = false)}
-        heading="Create new "
+        heading="Create New Offer"
       >
         <div class="column center-content">
           <mwc-textfield
             .disabled=${this.creditor !== undefined}
             .value=${this.creditor}
-            style="padding-bottom: 16px;"
+            style="padding-bottom: 16px; width: 24em;"
             id="creditor"
             label="Creditor"
             autoValidate
@@ -242,7 +242,7 @@
           Cancel
         </mwc-button>
         <mwc-button
-          .disabled=${!this.amountField || this.amountField.validity.valid}
+          .disabled=${!this.amountField || !this.amountField.validity.valid}
           slot="primaryAction"
           @click=${() => this.createOffer()}
           dialogAction="create"
