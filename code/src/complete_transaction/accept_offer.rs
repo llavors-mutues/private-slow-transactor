@@ -39,10 +39,17 @@ pub fn accept_offer(
                 send_accept_offer(&transaction_address, &approved_header_address, &transaction);
 
             match response {
-                Ok(OfferResponse::OfferPending(())) => Ok(()),
+                Ok(OfferResponse::OfferCompleted(attestation_address)) => {
+                    offer::complete_offer(&transaction_address, &attestation_address)?;
+                    Ok(())
+                }
                 Ok(OfferResponse::OfferCanceled) => {
                     offer::cancel_offer(&transaction_address)?;
                     Err(ZomeApiError::from(format!("Offer was canceled")))
+                }
+                Ok(OfferResponse::OfferPending(())) => {
+                    offer::update_offer_state(&transaction_address, OfferState::Pending)?;
+                    Err(ZomeApiError::from(String::from("Offer is still pending")))
                 }
                 Err(err) => {
                     offer::update_offer_state(&transaction_address, OfferState::Pending)?;
@@ -79,9 +86,10 @@ pub fn receive_accept_offer(
         OfferState::Approved {
             approved_header_address,
         } => {
-            handle_accept_offer(accept_offer_request, approved_header_address)?;
+            let attestation_address =
+                handle_accept_offer(accept_offer_request, approved_header_address)?;
 
-            Ok(OfferResponse::OfferPending(()))
+            Ok(OfferResponse::OfferCompleted(attestation_address))
         }
         OfferState::Canceled => Ok(OfferResponse::OfferCanceled),
         _ => Err(ZomeApiError::from(format!(
@@ -128,7 +136,7 @@ fn send_accept_offer(
 fn handle_accept_offer(
     accept_offer_request: AcceptOfferRequest,
     _approved_header_address: Option<Address>, // TODO: in the future, verify that creditor hasn't also committed anything new
-) -> ZomeApiResult<()> {
+) -> ZomeApiResult<Address> {
     validate_last_header_still_unchanged(accept_offer_request.approved_header_address)?;
 
     let offer = offer::query_offer(&accept_offer_request.transaction_address)?;
@@ -150,13 +158,10 @@ fn handle_accept_offer(
     match result {
         MessageBody::CompleteTransaction(OfferMessage::Response(OfferResponse::OfferPending(
             complete_transaction_response,
-        ))) => {
-            create_attestation(
-                &complete_transaction_response.chain_headers,
-                &complete_transaction_response.signature,
-            )?;
-            Ok(())
-        }
+        ))) => create_attestation(
+            &complete_transaction_response.chain_headers,
+            &complete_transaction_response.signature,
+        ),
         MessageBody::CompleteTransaction(OfferMessage::Response(OfferResponse::OfferCanceled)) => {
             offer::cancel_offer(&accept_offer_request.transaction_address)?;
             Err(ZomeApiError::from(format!("Offer was canceled")))

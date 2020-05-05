@@ -1,13 +1,13 @@
 import { LitElement } from 'lit-element';
 import { ApolloClient } from 'apollo-boost';
 import { Agent } from 'holochain-profiles';
-import { Dialog } from '@material/mwc-dialog';
+import { MCCreateOffer } from './hcmc-create-offer';
 declare const MCAllowedCreditorList_base: {
     new (...args: any[]): import("@uprtcl/micro-orchestrator").ConnectedElement;
     prototype: any;
 } & typeof LitElement;
 export declare class MCAllowedCreditorList extends MCAllowedCreditorList_base {
-    createOfferDialog: Dialog;
+    createOfferDialog: MCCreateOffer;
     selectedCreditor: string | undefined;
     agents: Agent[] | undefined;
     client: ApolloClient<any>;

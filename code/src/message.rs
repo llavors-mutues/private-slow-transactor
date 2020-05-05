@@ -23,6 +23,7 @@ pub type OfferMessage<Req, Res> = Message<Req, OfferResponse<Res>>;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum OfferResponse<Res> {
     OfferPending(Res),
+    OfferCompleted(Address),
     OfferCanceled,
 }
 

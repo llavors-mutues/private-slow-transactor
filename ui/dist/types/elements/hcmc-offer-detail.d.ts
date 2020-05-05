@@ -10,6 +10,7 @@ export declare class MCOfferDetail extends MCOfferDetail_base {
     transactionId: string;
     myAgentId: string;
     offer: Offer;
+    accepting: boolean;
     client: ApolloClient<any>;
     static get styles(): import("lit-element").CSSResult;
     firstUpdated(): Promise<void>;

@@ -29,6 +29,7 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
 
     const result = await this.client.query({
       query: GET_PENDING_OFFERS,
+      fetchPolicy: 'network-only',
     });
 
     this.myAgentId = result.data.me.id;

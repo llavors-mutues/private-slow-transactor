@@ -10,7 +10,6 @@ import gql from 'graphql-tag';
 import { moduleConnect, MicroModule, i18nextModule } from '@uprtcl/micro-orchestrator';
 import { css, LitElement, html, property, query } from 'lit-element';
 import { gql as gql$1 } from 'apollo-boost';
-import { Dialog } from '@material/mwc-dialog';
 import { ApolloClientModule, GraphQlSchemaModule } from '@uprtcl/graphql';
 
 /*! *****************************************************************************
@@ -156,7 +155,7 @@ const sharedStyles = css `
   }
 
   .item {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
   .padding {
@@ -199,32 +198,39 @@ class MCCreateOffer extends moduleConnect(LitElement) {
     }
     render() {
         return html `
-      <div class="column center-content">
-        <mwc-textfield
-          style="padding: 16px 0;"
-          label="Amount"
-          type="number"
-          id="amount"
-          min="0.1"
-          step="0.1"
-          autoValidate
-        ></mwc-textfield>
+      <mwc-dialog .open=${this.open} @closed=${() => (this.open = false)}>
+        <div class="column center-content">
+          <mwc-textfield
+            style="padding: 16px 0;"
+            label="Amount"
+            type="number"
+            id="amount"
+            min="0.1"
+            step="0.1"
+            autoValidate
+          ></mwc-textfield>
 
-        <mwc-textfield
-          .disabled=${this.creditor !== undefined}
-          .value=${this.creditor}
-          style="padding-bottom: 16px;"
-          id="creditor"
-          label="Creditor"
-          autoValidate
-        ></mwc-textfield>
+          <mwc-textfield
+            .disabled=${this.creditor !== undefined}
+            .value=${this.creditor}
+            style="padding-bottom: 16px;"
+            id="creditor"
+            label="Creditor"
+            autoValidate
+          ></mwc-textfield>
 
-        <mwc-button
-          label="CREATE OFFER"
-          raised
-          @click=${() => this.createOffer()}
-        ></mwc-button>
-      </div>
+          <mwc-button slot="secondaryAction" dialogAction="cancel">
+            Cancel
+          </mwc-button>
+          <mwc-button
+            slot="primaryAction"
+            @click=${() => this.createOffer()}
+            dialogAction="create"
+          >
+            Create Offer
+          </mwc-button>
+        </div>
+      </mwc-dialog>
     `;
     }
 }
@@ -253,6 +259,7 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
         this.client = this.request(ApolloClientModule.bindings.Client);
         const result = await this.client.query({
             query: GET_PENDING_OFFERS,
+            fetchPolicy: 'network-only',
         });
         this.myAgentId = result.data.me.id;
         this.offers = result.data.myOffers.filter((o) => o.state !== 'Completed');
@@ -333,6 +340,7 @@ class MCTransactionList extends moduleConnect(LitElement) {
         const client = this.request(ApolloClientModule.bindings.Client);
         const result = await client.query({
             query: GET_MY_TRANSACTIONS,
+            fetchPolicy: 'network-only'
         });
         this.myAgentId = result.data.me.id;
         this.transactions = result.data.myTransactions;
@@ -401,7 +409,7 @@ const mutualCreditTypeDefs = gql `
   enum OfferState {
     Received
     Pending
-    Declined
+    Canceled
     Approved
     Completed
   }
@@ -530,6 +538,10 @@ const resolvers = {
 };
 
 class MCOfferDetail extends moduleConnect(LitElement) {
+    constructor() {
+        super(...arguments);
+        this.accepting = false;
+    }
     static get styles() {
         return sharedStyles;
     }
@@ -540,18 +552,29 @@ class MCOfferDetail extends moduleConnect(LitElement) {
             variables: {
                 transactionId: this.transactionId,
             },
+            fetchPolicy: 'network-only'
         });
         this.offer = result.data.offer;
         this.myAgentId = result.data.me.id;
     }
     acceptOffer() {
-        this.client.mutate({
+        this.accepting = true;
+        this.client
+            .mutate({
             mutation: ACCEPT_OFFER,
             variables: {
                 transactionId: this.transactionId,
                 approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
             },
-        });
+        })
+            .then(() => {
+            this.dispatchEvent(new CustomEvent('offer-accepted', {
+                detail: { transactionId: this.transactionId },
+                composed: true,
+                bubbles: true,
+            }));
+        })
+            .finally(() => (this.accepting = false));
     }
     isOutgoing() {
         return this.offer.transaction.debtor.id === this.myAgentId;
@@ -608,14 +631,15 @@ class MCOfferDetail extends moduleConnect(LitElement) {
             ? html `<span>Awaiting for approval</span>`
             : html `
               <div class="row" style="margin-top: 4px;">
-<!--                 <mwc-button
+                <mwc-button
                   label="DECLINE"
                   style="flex: 1;"
                   @click=${() => this.acceptOffer()}
                 ></mwc-button>
- -->                <mwc-button
+                <mwc-button
                   style="flex: 1;"
-                  .disabled=${!this.offer.counterpartySnapshot.executable}
+                  .disabled=${!this.offer.counterpartySnapshot.executable ||
+                this.offer.state !== 'Pending'}
                   label="ACCEPT"
                   raised
                   @click=${() => this.acceptOffer()}
@@ -638,6 +662,10 @@ __decorate([
     property({ type: Object }),
     __metadata("design:type", Object)
 ], MCOfferDetail.prototype, "offer", void 0);
+__decorate([
+    property({ type: Boolean }),
+    __metadata("design:type", Boolean)
+], MCOfferDetail.prototype, "accepting", void 0);
 
 const allAgentsAllowed = async (client) => {
     const result = await client.query({
@@ -678,13 +706,14 @@ class MCAllowedCreditorList extends moduleConnect(LitElement) {
         this.agents = agents.filter((a) => a.id !== result.data.me.id);
     }
     renderCreateOffer() {
-        return html `<mwc-dialog id="create-offer-dialog">
+        return html `
       <hcmc-create-offer
+        id="create-offer-dialog"
         .creditor=${this.selectedCreditor}
         @offer-created=${() => (this.createOfferDialog.open = false)}
       >
       </hcmc-create-offer>
-    </mwc-dialog>`;
+    `;
     }
     renderAgent(agent) {
         return html `
@@ -732,7 +761,7 @@ class MCAllowedCreditorList extends moduleConnect(LitElement) {
 }
 __decorate([
     query('#create-offer-dialog'),
-    __metadata("design:type", Dialog)
+    __metadata("design:type", MCCreateOffer)
 ], MCAllowedCreditorList.prototype, "createOfferDialog", void 0);
 __decorate([
     property({ type: String }),

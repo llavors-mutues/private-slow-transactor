@@ -6,7 +6,7 @@ export const mutualCreditTypeDefs = gql`
   enum OfferState {
     Received
     Pending
-    Declined
+    Canceled
     Approved
     Completed
   }

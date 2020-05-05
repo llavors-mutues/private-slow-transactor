@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@uprtcl/holochain-provider'), require('holochain-profiles'), require('@material/mwc-textfield'), require('@material/mwc-button'), require('@material/mwc-textfield/mwc-textfield-base'), require('@material/mwc-top-app-bar'), require('@material/mwc-list'), require('@authentic/mwc-circular-progress'), require('graphql-tag'), require('@uprtcl/micro-orchestrator'), require('lit-element'), require('apollo-boost'), require('@material/mwc-dialog'), require('@uprtcl/graphql')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@uprtcl/holochain-provider', 'holochain-profiles', '@material/mwc-textfield', '@material/mwc-button', '@material/mwc-textfield/mwc-textfield-base', '@material/mwc-top-app-bar', '@material/mwc-list', '@authentic/mwc-circular-progress', 'graphql-tag', '@uprtcl/micro-orchestrator', 'lit-element', 'apollo-boost', '@material/mwc-dialog', '@uprtcl/graphql'], factory) :
-    (factory((global.hcMutualCredit = {}),global.holochainProvider,global.holochainProfiles,null,null,global.mwcTextfieldBase,null,null,null,global.gql,global.microOrchestrator,global.litElement,global.apolloBoost,global.mwcDialog,global.graphql));
-}(this, (function (exports,holochainProvider,holochainProfiles,mwcTextfield,mwcButton,mwcTextfieldBase,mwcTopAppBar,mwcList,mwcCircularProgress,gql,microOrchestrator,litElement,apolloBoost,mwcDialog,graphql) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@uprtcl/holochain-provider'), require('holochain-profiles'), require('@material/mwc-textfield'), require('@material/mwc-button'), require('@material/mwc-textfield/mwc-textfield-base'), require('@material/mwc-top-app-bar'), require('@material/mwc-list'), require('@authentic/mwc-circular-progress'), require('graphql-tag'), require('@uprtcl/micro-orchestrator'), require('lit-element'), require('apollo-boost'), require('@uprtcl/graphql')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@uprtcl/holochain-provider', 'holochain-profiles', '@material/mwc-textfield', '@material/mwc-button', '@material/mwc-textfield/mwc-textfield-base', '@material/mwc-top-app-bar', '@material/mwc-list', '@authentic/mwc-circular-progress', 'graphql-tag', '@uprtcl/micro-orchestrator', 'lit-element', 'apollo-boost', '@uprtcl/graphql'], factory) :
+    (factory((global.hcMutualCredit = {}),global.holochainProvider,global.holochainProfiles,null,null,global.mwcTextfieldBase,null,null,null,global.gql,global.microOrchestrator,global.litElement,global.apolloBoost,global.graphql));
+}(this, (function (exports,holochainProvider,holochainProfiles,mwcTextfield,mwcButton,mwcTextfieldBase,mwcTopAppBar,mwcList,mwcCircularProgress,gql,microOrchestrator,litElement,apolloBoost,graphql) { 'use strict';
 
     gql = gql && gql.hasOwnProperty('default') ? gql['default'] : gql;
 
@@ -149,7 +149,7 @@
   }
 
   .item {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
   .padding {
@@ -192,32 +192,39 @@
         }
         render() {
             return litElement.html `
-      <div class="column center-content">
-        <mwc-textfield
-          style="padding: 16px 0;"
-          label="Amount"
-          type="number"
-          id="amount"
-          min="0.1"
-          step="0.1"
-          autoValidate
-        ></mwc-textfield>
+      <mwc-dialog .open=${this.open} @closed=${() => (this.open = false)}>
+        <div class="column center-content">
+          <mwc-textfield
+            style="padding: 16px 0;"
+            label="Amount"
+            type="number"
+            id="amount"
+            min="0.1"
+            step="0.1"
+            autoValidate
+          ></mwc-textfield>
 
-        <mwc-textfield
-          .disabled=${this.creditor !== undefined}
-          .value=${this.creditor}
-          style="padding-bottom: 16px;"
-          id="creditor"
-          label="Creditor"
-          autoValidate
-        ></mwc-textfield>
+          <mwc-textfield
+            .disabled=${this.creditor !== undefined}
+            .value=${this.creditor}
+            style="padding-bottom: 16px;"
+            id="creditor"
+            label="Creditor"
+            autoValidate
+          ></mwc-textfield>
 
-        <mwc-button
-          label="CREATE OFFER"
-          raised
-          @click=${() => this.createOffer()}
-        ></mwc-button>
-      </div>
+          <mwc-button slot="secondaryAction" dialogAction="cancel">
+            Cancel
+          </mwc-button>
+          <mwc-button
+            slot="primaryAction"
+            @click=${() => this.createOffer()}
+            dialogAction="create"
+          >
+            Create Offer
+          </mwc-button>
+        </div>
+      </mwc-dialog>
     `;
         }
     }
@@ -246,6 +253,7 @@
             this.client = this.request(graphql.ApolloClientModule.bindings.Client);
             const result = await this.client.query({
                 query: GET_PENDING_OFFERS,
+                fetchPolicy: 'network-only',
             });
             this.myAgentId = result.data.me.id;
             this.offers = result.data.myOffers.filter((o) => o.state !== 'Completed');
@@ -326,6 +334,7 @@
             const client = this.request(graphql.ApolloClientModule.bindings.Client);
             const result = await client.query({
                 query: GET_MY_TRANSACTIONS,
+                fetchPolicy: 'network-only'
             });
             this.myAgentId = result.data.me.id;
             this.transactions = result.data.myTransactions;
@@ -394,7 +403,7 @@
   enum OfferState {
     Received
     Pending
-    Declined
+    Canceled
     Approved
     Completed
   }
@@ -523,6 +532,10 @@
     };
 
     class MCOfferDetail extends microOrchestrator.moduleConnect(litElement.LitElement) {
+        constructor() {
+            super(...arguments);
+            this.accepting = false;
+        }
         static get styles() {
             return sharedStyles;
         }
@@ -533,18 +546,29 @@
                 variables: {
                     transactionId: this.transactionId,
                 },
+                fetchPolicy: 'network-only'
             });
             this.offer = result.data.offer;
             this.myAgentId = result.data.me.id;
         }
         acceptOffer() {
-            this.client.mutate({
+            this.accepting = true;
+            this.client
+                .mutate({
                 mutation: ACCEPT_OFFER,
                 variables: {
                     transactionId: this.transactionId,
                     approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
                 },
-            });
+            })
+                .then(() => {
+                this.dispatchEvent(new CustomEvent('offer-accepted', {
+                    detail: { transactionId: this.transactionId },
+                    composed: true,
+                    bubbles: true,
+                }));
+            })
+                .finally(() => (this.accepting = false));
         }
         isOutgoing() {
             return this.offer.transaction.debtor.id === this.myAgentId;
@@ -601,14 +625,15 @@
             ? litElement.html `<span>Awaiting for approval</span>`
             : litElement.html `
               <div class="row" style="margin-top: 4px;">
-<!--                 <mwc-button
+                <mwc-button
                   label="DECLINE"
                   style="flex: 1;"
                   @click=${() => this.acceptOffer()}
                 ></mwc-button>
- -->                <mwc-button
+                <mwc-button
                   style="flex: 1;"
-                  .disabled=${!this.offer.counterpartySnapshot.executable}
+                  .disabled=${!this.offer.counterpartySnapshot.executable ||
+                this.offer.state !== 'Pending'}
                   label="ACCEPT"
                   raised
                   @click=${() => this.acceptOffer()}
@@ -631,6 +656,10 @@
         litElement.property({ type: Object }),
         __metadata("design:type", Object)
     ], MCOfferDetail.prototype, "offer", void 0);
+    __decorate([
+        litElement.property({ type: Boolean }),
+        __metadata("design:type", Boolean)
+    ], MCOfferDetail.prototype, "accepting", void 0);
 
     const allAgentsAllowed = async (client) => {
         const result = await client.query({
@@ -671,13 +700,14 @@
             this.agents = agents.filter((a) => a.id !== result.data.me.id);
         }
         renderCreateOffer() {
-            return litElement.html `<mwc-dialog id="create-offer-dialog">
+            return litElement.html `
       <hcmc-create-offer
+        id="create-offer-dialog"
         .creditor=${this.selectedCreditor}
         @offer-created=${() => (this.createOfferDialog.open = false)}
       >
       </hcmc-create-offer>
-    </mwc-dialog>`;
+    `;
         }
         renderAgent(agent) {
             return litElement.html `
@@ -725,7 +755,7 @@
     }
     __decorate([
         litElement.query('#create-offer-dialog'),
-        __metadata("design:type", mwcDialog.Dialog)
+        __metadata("design:type", MCCreateOffer)
     ], MCAllowedCreditorList.prototype, "createOfferDialog", void 0);
     __decorate([
         litElement.property({ type: String }),

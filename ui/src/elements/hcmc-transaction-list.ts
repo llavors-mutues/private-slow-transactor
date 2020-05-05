@@ -30,6 +30,7 @@ export class MCTransactionList extends moduleConnect(LitElement) {
     );
     const result = await client.query({
       query: GET_MY_TRANSACTIONS,
+      fetchPolicy: 'network-only'
     });
 
     this.myAgentId = result.data.me.id;

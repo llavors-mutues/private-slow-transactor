@@ -9,10 +9,11 @@ import { ApolloClientModule } from '@uprtcl/graphql';
 import { MutualCreditBindings } from '../bindings';
 import { GetAllowedCreditors } from '../types';
 import { sharedStyles } from './sharedStyles';
+import { MCCreateOffer } from './hcmc-create-offer';
 
 export class MCAllowedCreditorList extends moduleConnect(LitElement) {
   @query('#create-offer-dialog')
-  createOfferDialog!: Dialog;
+  createOfferDialog!: MCCreateOffer;
 
   @property({ type: String })
   selectedCreditor: string | undefined = undefined;
@@ -49,13 +50,14 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
   }
 
   renderCreateOffer() {
-    return html`<mwc-dialog id="create-offer-dialog">
+    return html`
       <hcmc-create-offer
+        id="create-offer-dialog"
         .creditor=${this.selectedCreditor}
         @offer-created=${() => (this.createOfferDialog.open = false)}
       >
       </hcmc-create-offer>
-    </mwc-dialog>`;
+    `;
   }
 
   renderAgent(agent: Agent) {

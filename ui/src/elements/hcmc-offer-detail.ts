@@ -17,6 +17,9 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
   @property({ type: Object })
   offer!: Offer;
 
+  @property({ type: Boolean })
+  accepting: boolean = false;
+
   client!: ApolloClient<any>;
 
   static get styles() {
@@ -31,6 +34,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       variables: {
         transactionId: this.transactionId,
       },
+      fetchPolicy: 'network-only'
     });
 
     this.offer = result.data.offer;
@@ -38,13 +42,26 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
   }
 
   acceptOffer() {
-    this.client.mutate({
-      mutation: ACCEPT_OFFER,
-      variables: {
-        transactionId: this.transactionId,
-        approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
-      },
-    });
+    this.accepting = true;
+
+    this.client
+      .mutate({
+        mutation: ACCEPT_OFFER,
+        variables: {
+          transactionId: this.transactionId,
+          approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
+        },
+      })
+      .then(() => {
+        this.dispatchEvent(
+          new CustomEvent('offer-accepted', {
+            detail: { transactionId: this.transactionId },
+            composed: true,
+            bubbles: true,
+          })
+        );
+      })
+      .finally(() => (this.accepting = false));
   }
 
   isOutgoing() {
@@ -115,7 +132,8 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
                 ></mwc-button>
                 <mwc-button
                   style="flex: 1;"
-                  .disabled=${!this.offer.counterpartySnapshot.executable}
+                  .disabled=${!this.offer.counterpartySnapshot.executable ||
+                  this.offer.state !== 'Pending'}
                   label="ACCEPT"
                   raised
                   @click=${() => this.acceptOffer()}

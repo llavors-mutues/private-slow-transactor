@@ -54,32 +54,39 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
 
   render() {
     return html`
-      <div class="column center-content">
-        <mwc-textfield
-          style="padding: 16px 0;"
-          label="Amount"
-          type="number"
-          id="amount"
-          min="0.1"
-          step="0.1"
-          autoValidate
-        ></mwc-textfield>
+      <mwc-dialog .open=${this.open} @closed=${() => (this.open = false)}>
+        <div class="column center-content">
+          <mwc-textfield
+            style="padding: 16px 0;"
+            label="Amount"
+            type="number"
+            id="amount"
+            min="0.1"
+            step="0.1"
+            autoValidate
+          ></mwc-textfield>
 
-        <mwc-textfield
-          .disabled=${this.creditor !== undefined}
-          .value=${this.creditor}
-          style="padding-bottom: 16px;"
-          id="creditor"
-          label="Creditor"
-          autoValidate
-        ></mwc-textfield>
+          <mwc-textfield
+            .disabled=${this.creditor !== undefined}
+            .value=${this.creditor}
+            style="padding-bottom: 16px;"
+            id="creditor"
+            label="Creditor"
+            autoValidate
+          ></mwc-textfield>
 
-        <mwc-button
-          label="CREATE OFFER"
-          raised
-          @click=${() => this.createOffer()}
-        ></mwc-button>
-      </div>
+          <mwc-button slot="secondaryAction" dialogAction="cancel">
+            Cancel
+          </mwc-button>
+          <mwc-button
+            slot="primaryAction"
+            @click=${() => this.createOffer()}
+            dialogAction="create"
+          >
+            Create Offer
+          </mwc-button>
+        </div>
+      </mwc-dialog>
     `;
   }
 }

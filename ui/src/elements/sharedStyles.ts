@@ -21,7 +21,7 @@ export const sharedStyles = css`
   }
 
   .item {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
   .padding {
