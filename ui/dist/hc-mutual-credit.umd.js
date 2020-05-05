@@ -265,12 +265,15 @@
         }
         async firstUpdated() {
             this.client = this.request(graphql.ApolloClientModule.bindings.Client);
-            const result = await this.client.query({
+            this.client
+                .watchQuery({
                 query: GET_PENDING_OFFERS,
                 fetchPolicy: 'network-only',
+            })
+                .subscribe((result) => {
+                this.myAgentId = result.data.me.id;
+                this.offers = result.data.myOffers.filter((offer) => offer.state !== 'Completed' && offer.state !== 'Canceled');
             });
-            this.myAgentId = result.data.me.id;
-            this.offers = result.data.myOffers.filter((o) => o.state !== 'Completed');
         }
         renderPlaceholder(type) {
             return litElement.html `<span style="padding-top: 16px;"
@@ -281,9 +284,6 @@
             this.dispatchEvent(new CustomEvent('offer-selected', {
                 detail: { transactionId, composed: true, bubbles: true },
             }));
-        }
-        getPendingOffers() {
-            return this.offers.filter((offer) => offer.state !== 'Completed');
         }
         getOutgoing() {
             return this.offers.filter((offer) => offer.transaction.debtor.id === this.myAgentId);
@@ -560,13 +560,14 @@
         constructor() {
             super(...arguments);
             this.accepting = false;
+            this.canceling = false;
         }
         static get styles() {
             return sharedStyles;
         }
         updated(changedValues) {
             super.updated(changedValues);
-            if (changedValues.has('transactionId')) {
+            if (changedValues.has('transactionId') && this.transactionId !== null) {
                 this.loadOffer();
             }
         }
@@ -601,6 +602,28 @@
                 }));
             })
                 .finally(() => (this.accepting = false));
+        }
+        async cancelOffer() {
+            (this.canceling = true),
+                await this.client.mutate({
+                    mutation: CANCEL_OFFER,
+                    variables: {
+                        transactionId: this.transactionId,
+                    },
+                    update: (cache, result) => {
+                        const pendingOffers = cache.readQuery({
+                            query: GET_PENDING_OFFERS,
+                        });
+                        const offers = pendingOffers.myOffers.filter((o) => o.id !== this.transactionId);
+                        pendingOffers.myOffers = offers;
+                        cache.writeQuery({ query: GET_PENDING_OFFERS, data: pendingOffers });
+                    },
+                });
+            this.dispatchEvent(new CustomEvent('offer-canceled', {
+                detail: { transactionId: this.transactionId },
+                bubbles: true,
+                composed: true,
+            }));
         }
         isOutgoing() {
             return this.offer.transaction.debtor.id === this.myAgentId;
@@ -647,28 +670,33 @@
       </div>
     `;
         }
+        placeholderMessage() {
+            if (this.accepting)
+                return 'Accepting offer...';
+            if (this.canceling)
+                return 'Canceling offer...';
+            return 'Fetching and verifying counterparty chain...';
+        }
         render() {
-            if (!this.offer || this.accepting)
+            if (!this.offer || this.accepting || this.canceling)
                 return litElement.html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 18px;"
-          >${this.accepting
-                ? 'Accepting offer...'
-                : 'Fetching and verifying counterparty chain...'}</span
-        >
+        <span style="margin-top: 18px;">${this.placeholderMessage()}</span>
       </div>`;
             return litElement.html `
       <div class="column">
         ${this.renderCounterparty()}
-        ${this.isOutgoing()
-            ? litElement.html `<span>Awaiting for approval</span>`
+        <div class="row center-content" style="margin-top: 4px;">
+          <mwc-button
+            label="CANCEL"
+            style="flex: 1; margin-right: 16px;"
+            @click=${() => this.cancelOffer()}
+          ></mwc-button>
+          ${this.isOutgoing()
+            ? litElement.html `<span style="flex: 1; opacity: 0.8;">
+                Awaiting for approval
+              </span>`
             : litElement.html `
-              <div class="row" style="margin-top: 4px;">
-                <mwc-button
-                  label="DECLINE"
-                  style="flex: 1;"
-                  @click=${() => this.acceptOffer()}
-                ></mwc-button>
                 <mwc-button
                   style="flex: 1;"
                   .disabled=${!this.offer.counterpartySnapshot.executable ||
@@ -677,8 +705,8 @@
                   raised
                   @click=${() => this.acceptOffer()}
                 ></mwc-button>
-              </div>
-            `}
+              `}
+        </div>
       </div>
     `;
         }
@@ -699,6 +727,10 @@
         litElement.property({ type: Boolean }),
         __metadata("design:type", Boolean)
     ], MCOfferDetail.prototype, "accepting", void 0);
+    __decorate([
+        litElement.property({ type: Boolean }),
+        __metadata("design:type", Boolean)
+    ], MCOfferDetail.prototype, "canceling", void 0);
 
     const allAgentsAllowed = async (client) => {
         const result = await client.query({

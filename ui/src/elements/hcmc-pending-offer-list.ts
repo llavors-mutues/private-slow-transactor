@@ -34,13 +34,17 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
   async firstUpdated() {
     this.client = this.request(ApolloClientModule.bindings.Client);
 
-    const result = await this.client.query({
-      query: GET_PENDING_OFFERS,
-      fetchPolicy: 'network-only',
-    });
-
-    this.myAgentId = result.data.me.id;
-    this.offers = result.data.myOffers.filter((o) => o.state !== 'Completed');
+    this.client
+      .watchQuery({
+        query: GET_PENDING_OFFERS,
+        fetchPolicy: 'network-only',
+      })
+      .subscribe((result) => {
+        this.myAgentId = result.data.me.id;
+        this.offers = result.data.myOffers.filter(
+          (offer) => offer.state !== 'Completed' && offer.state !== 'Canceled'
+          );
+      });
   }
 
   renderPlaceholder(type: string) {
@@ -55,10 +59,6 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
         detail: { transactionId, composed: true, bubbles: true },
       })
     );
-  }
-
-  getPendingOffers() {
-    return this.offers.filter((offer) => offer.state !== 'Completed');
   }
 
   getOutgoing(): Offer[] {

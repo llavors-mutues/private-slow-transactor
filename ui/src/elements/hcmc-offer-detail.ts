@@ -3,11 +3,12 @@ import { LitElement, html, property, css, PropertyValues } from 'lit-element';
 import { sharedStyles } from './sharedStyles';
 import { Offer } from 'src/types';
 import { ApolloClientModule } from '@uprtcl/graphql';
-import { ApolloClient } from 'apollo-boost';
+import { ApolloClient, gql } from 'apollo-boost';
 import {
   GET_OFFER_DETAIL,
   ACCEPT_OFFER,
   CANCEL_OFFER,
+  GET_PENDING_OFFERS,
 } from 'src/graphql/queries';
 import { Agent } from 'holochain-profiles';
 
@@ -36,7 +37,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
   updated(changedValues: PropertyValues) {
     super.updated(changedValues);
 
-    if (changedValues.has('transactionId')) {
+    if (changedValues.has('transactionId') && this.transactionId !== null) {
       this.loadOffer();
     }
   }
@@ -86,6 +87,19 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         mutation: CANCEL_OFFER,
         variables: {
           transactionId: this.transactionId,
+        },
+        update: (cache, result) => {
+          const pendingOffers: any = cache.readQuery({
+            query: GET_PENDING_OFFERS,
+          });
+
+          const offers = pendingOffers.myOffers.filter(
+            (o) => o.id !== this.transactionId
+          );
+
+          pendingOffers.myOffers = offers;
+
+          cache.writeQuery({ query: GET_PENDING_OFFERS, data: pendingOffers });
         },
       });
 
@@ -148,24 +162,26 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     `;
   }
 
+  placeholderMessage() {
+    if (this.accepting) return 'Accepting offer...';
+    if (this.canceling) return 'Canceling offer...';
+    return 'Fetching and verifying counterparty chain...';
+  }
+
   render() {
-    if (!this.offer || this.accepting)
+    if (!this.offer || this.accepting || this.canceling)
       return html`<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 18px;"
-          >${this.accepting
-            ? 'Accepting offer...'
-            : 'Fetching and verifying counterparty chain...'}</span
-        >
+        <span style="margin-top: 18px;">${this.placeholderMessage()}</span>
       </div>`;
 
     return html`
       <div class="column">
         ${this.renderCounterparty()}
-        <div class="row" style="margin-top: 4px;">
+        <div class="row center-content" style="margin-top: 4px;">
           <mwc-button
             label="CANCEL"
-            style="flex: 1;"
+            style="flex: 1; margin-right: 16px;"
             @click=${() => this.cancelOffer()}
           ></mwc-button>
           ${this.isOutgoing()
