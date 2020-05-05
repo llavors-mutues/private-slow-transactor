@@ -103,5 +103,16 @@ export const resolvers = {
 
       return transactionId;
     },
+    async cancelOffer(_, { transactionId }, { container }) {
+      const mutualCreditProvider: HolochainProvider = container.get(
+        MutualCreditBindings.MutualCreditProvider
+      );
+
+      await mutualCreditProvider.call('cancel_offer', {
+        transaction_address: transactionId,
+      });
+
+      return transactionId;
+    },
   },
 };

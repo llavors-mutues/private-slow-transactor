@@ -46,7 +46,7 @@ export const mutualCreditTypeDefs = gql`
 
   extend type Mutation {
     createOffer(creditorId: ID!, amount: Float!): ID!
-    declineOffer(transactionId: ID!): ID!
+    cancelOffer(transactionId: ID!): ID!
     acceptOffer(transactionId: ID!, approvedHeaderId: ID!): ID!
   }
 `;

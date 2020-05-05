@@ -133,6 +133,13 @@ const ACCEPT_OFFER = gql `
     )
   }
 `;
+const CANCEL_OFFER = gql `
+  mutation CancelOffer($transactionId: ID!) {
+    cancelOffer(
+      transactionId: $transactionId
+    )
+  }
+`;
 
 const sharedStyles = css `
   .column {
@@ -460,7 +467,7 @@ const mutualCreditTypeDefs = gql `
 
   extend type Mutation {
     createOffer(creditorId: ID!, amount: Float!): ID!
-    declineOffer(transactionId: ID!): ID!
+    cancelOffer(transactionId: ID!): ID!
     acceptOffer(transactionId: ID!, approvedHeaderId: ID!): ID!
   }
 `;
@@ -542,6 +549,13 @@ const resolvers = {
             await mutualCreditProvider.call('accept_offer', {
                 transaction_address: transactionId,
                 approved_header_address: approvedHeaderId,
+            });
+            return transactionId;
+        },
+        async cancelOffer(_, { transactionId }, { container }) {
+            const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
+            await mutualCreditProvider.call('cancel_offer', {
+                transaction_address: transactionId,
             });
             return transactionId;
         },
@@ -643,7 +657,7 @@ class MCOfferDetail extends moduleConnect(LitElement) {
         if (!this.offer || this.accepting)
             return html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 12px;"
+        <span style="margin-top: 18px;"
           >${this.accepting
                 ? 'Accepting offer...'
                 : 'Fetching and verifying counterparty chain...'}</span
@@ -828,5 +842,5 @@ class MutualCreditModule extends MicroModule {
 MutualCreditModule.id = 'mutual-credit-module';
 MutualCreditModule.bindings = MutualCreditBindings;
 
-export { MutualCreditModule };
+export { MutualCreditModule, ACCEPT_OFFER, CANCEL_OFFER, CREATE_OFFER, GET_MY_BALANCE, GET_MY_TRANSACTIONS, GET_OFFER_DETAIL, GET_PENDING_OFFERS };
 //# sourceMappingURL=hc-mutual-credit.es5.js.map

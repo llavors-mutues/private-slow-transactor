@@ -100,3 +100,11 @@ export const ACCEPT_OFFER = gql`
     )
   }
 `;
+
+export const CANCEL_OFFER = gql`
+  mutation CancelOffer($transactionId: ID!) {
+    cancelOffer(
+      transactionId: $transactionId
+    )
+  }
+`;

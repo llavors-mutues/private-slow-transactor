@@ -127,6 +127,13 @@
     )
   }
 `;
+    const CANCEL_OFFER = gql `
+  mutation CancelOffer($transactionId: ID!) {
+    cancelOffer(
+      transactionId: $transactionId
+    )
+  }
+`;
 
     const sharedStyles = litElement.css `
   .column {
@@ -454,7 +461,7 @@
 
   extend type Mutation {
     createOffer(creditorId: ID!, amount: Float!): ID!
-    declineOffer(transactionId: ID!): ID!
+    cancelOffer(transactionId: ID!): ID!
     acceptOffer(transactionId: ID!, approvedHeaderId: ID!): ID!
   }
 `;
@@ -536,6 +543,13 @@
                 await mutualCreditProvider.call('accept_offer', {
                     transaction_address: transactionId,
                     approved_header_address: approvedHeaderId,
+                });
+                return transactionId;
+            },
+            async cancelOffer(_, { transactionId }, { container }) {
+                const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
+                await mutualCreditProvider.call('cancel_offer', {
+                    transaction_address: transactionId,
                 });
                 return transactionId;
             },
@@ -637,7 +651,7 @@
             if (!this.offer || this.accepting)
                 return litElement.html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 12px;"
+        <span style="margin-top: 18px;"
           >${this.accepting
                 ? 'Accepting offer...'
                 : 'Fetching and verifying counterparty chain...'}</span
@@ -823,6 +837,13 @@
     MutualCreditModule.bindings = MutualCreditBindings;
 
     exports.MutualCreditModule = MutualCreditModule;
+    exports.ACCEPT_OFFER = ACCEPT_OFFER;
+    exports.CANCEL_OFFER = CANCEL_OFFER;
+    exports.CREATE_OFFER = CREATE_OFFER;
+    exports.GET_MY_BALANCE = GET_MY_BALANCE;
+    exports.GET_MY_TRANSACTIONS = GET_MY_TRANSACTIONS;
+    exports.GET_OFFER_DETAIL = GET_OFFER_DETAIL;
+    exports.GET_PENDING_OFFERS = GET_PENDING_OFFERS;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

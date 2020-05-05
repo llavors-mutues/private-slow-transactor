@@ -48,5 +48,10 @@ export declare const resolvers: {
         }, { container }: {
             container: any;
         }): Promise<any>;
+        cancelOffer(_: any, { transactionId }: {
+            transactionId: any;
+        }, { container }: {
+            container: any;
+        }): Promise<any>;
     };
 };
