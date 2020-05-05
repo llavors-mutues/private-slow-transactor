@@ -1,5 +1,5 @@
 import { moduleConnect } from '@uprtcl/micro-orchestrator';
-import { LitElement, html, property, query } from 'lit-element';
+import { LitElement, html, property, query, PropertyValues } from 'lit-element';
 import { ApolloClient } from 'apollo-boost';
 import { ApolloClientModule } from '@uprtcl/graphql';
 import { CREATE_OFFER } from 'src/graphql/queries';
@@ -98,7 +98,7 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
           Cancel
         </mwc-button>
         <mwc-button
-          .disabled=${this.amountField.validity.valid}
+          .disabled=${!this.amountField || this.amountField.validity.valid}
           slot="primaryAction"
           @click=${() => this.createOffer()}
           dialogAction="create"

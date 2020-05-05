@@ -248,7 +248,7 @@ class MCCreateOffer extends moduleConnect(LitElement) {
           Cancel
         </mwc-button>
         <mwc-button
-          .disabled=${this.amountField.validity.valid}
+          .disabled=${!this.amountField || this.amountField.validity.valid}
           slot="primaryAction"
           @click=${() => this.createOffer()}
           dialogAction="create"
