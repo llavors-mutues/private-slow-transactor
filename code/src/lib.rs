@@ -81,7 +81,7 @@ mod transactor {
         transaction_address: Address,
         approved_header_address: Address,
     ) -> ZomeApiResult<()> {
-        complete_transaction::accept_offer::send_accept_offer(
+        complete_transaction::accept_offer::accept_offer(
             transaction_address,
             approved_header_address,
         )

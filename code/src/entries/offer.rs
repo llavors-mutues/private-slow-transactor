@@ -128,7 +128,7 @@ pub fn complete_offer(
 /**
  * Updates the private offer to the given offer state
  */
-fn update_offer_state(transaction_address: &Address, offer_state: OfferState) -> ZomeApiResult<()> {
+pub fn update_offer_state(transaction_address: &Address, offer_state: OfferState) -> ZomeApiResult<()> {
     let mut offer = query_offer(transaction_address)?;
 
     let current_address = offer.address()?;

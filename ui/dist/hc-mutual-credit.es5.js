@@ -608,12 +608,12 @@ class MCOfferDetail extends moduleConnect(LitElement) {
             ? html `<span>Awaiting for approval</span>`
             : html `
               <div class="row" style="margin-top: 4px;">
-                <mwc-button
+<!--                 <mwc-button
                   label="DECLINE"
                   style="flex: 1;"
                   @click=${() => this.acceptOffer()}
                 ></mwc-button>
-                <mwc-button
+ -->                <mwc-button
                   style="flex: 1;"
                   .disabled=${!this.offer.counterpartySnapshot.executable}
                   label="ACCEPT"
@@ -679,7 +679,10 @@ class MCAllowedCreditorList extends moduleConnect(LitElement) {
     }
     renderCreateOffer() {
         return html `<mwc-dialog id="create-offer-dialog">
-      <hcmc-create-offer .creditor=${this.selectedCreditor}>
+      <hcmc-create-offer
+        .creditor=${this.selectedCreditor}
+        @offer-created=${() => (this.createOfferDialog.open = false)}
+      >
       </hcmc-create-offer>
     </mwc-dialog>`;
     }

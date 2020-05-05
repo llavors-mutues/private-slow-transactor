@@ -50,7 +50,10 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
 
   renderCreateOffer() {
     return html`<mwc-dialog id="create-offer-dialog">
-      <hcmc-create-offer .creditor=${this.selectedCreditor}>
+      <hcmc-create-offer
+        .creditor=${this.selectedCreditor}
+        @offer-created=${() => (this.createOfferDialog.open = false)}
+      >
       </hcmc-create-offer>
     </mwc-dialog>`;
   }
