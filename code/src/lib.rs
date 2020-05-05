@@ -78,7 +78,7 @@ mod transactor {
 
     #[zome_fn("hc_public")]
     pub fn cancel_offer(transaction_address: Address) -> ZomeApiResult<()> {
-        offer::cancel_offer(&transaction_address)
+        complete_transaction::cancel_offer::send_cancel_offer(&transaction_address)
     }
 
     #[zome_fn("hc_public")]

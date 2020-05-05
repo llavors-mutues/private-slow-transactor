@@ -4,7 +4,11 @@ import { sharedStyles } from './sharedStyles';
 import { Offer } from 'src/types';
 import { ApolloClientModule } from '@uprtcl/graphql';
 import { ApolloClient } from 'apollo-boost';
-import { GET_OFFER_DETAIL, ACCEPT_OFFER } from 'src/graphql/queries';
+import {
+  GET_OFFER_DETAIL,
+  ACCEPT_OFFER,
+  CANCEL_OFFER,
+} from 'src/graphql/queries';
 import { Agent } from 'holochain-profiles';
 
 export class MCOfferDetail extends moduleConnect(LitElement) {
@@ -19,6 +23,9 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
 
   @property({ type: Boolean })
   accepting: boolean = false;
+
+  @property({ type: Boolean })
+  canceling: boolean = false;
 
   client!: ApolloClient<any>;
 
@@ -71,6 +78,24 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         );
       })
       .finally(() => (this.accepting = false));
+  }
+
+  async cancelOffer() {
+    (this.canceling = true),
+      await this.client.mutate({
+        mutation: CANCEL_OFFER,
+        variables: {
+          transactionId: this.transactionId,
+        },
+      });
+
+    this.dispatchEvent(
+      new CustomEvent('offer-canceled', {
+        detail: { transactionId: this.transactionId },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   isOutgoing() {
@@ -137,15 +162,17 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     return html`
       <div class="column">
         ${this.renderCounterparty()}
-        ${this.isOutgoing()
-          ? html`<span>Awaiting for approval</span>`
-          : html`
-              <div class="row" style="margin-top: 4px;">
-                <mwc-button
-                  label="DECLINE"
-                  style="flex: 1;"
-                  @click=${() => this.acceptOffer()}
-                ></mwc-button>
+        <div class="row" style="margin-top: 4px;">
+          <mwc-button
+            label="CANCEL"
+            style="flex: 1;"
+            @click=${() => this.cancelOffer()}
+          ></mwc-button>
+          ${this.isOutgoing()
+            ? html`<span style="flex: 1; opacity: 0.8;">
+                Awaiting for approval
+              </span>`
+            : html`
                 <mwc-button
                   style="flex: 1;"
                   .disabled=${!this.offer.counterpartySnapshot.executable ||
@@ -154,8 +181,8 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
                   raised
                   @click=${() => this.acceptOffer()}
                 ></mwc-button>
-              </div>
-            `}
+              `}
+        </div>
       </div>
     `;
   }

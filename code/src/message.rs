@@ -31,6 +31,7 @@ pub enum OfferResponse<Res> {
 pub enum MessageBody {
     SendOffer(Message<Transaction, ()>),
     GetChainSnapshot(OfferMessage<Address, ChainSnapshot>),
+    CancelOffer(Message<Address, ()>),
     AcceptOffer(OfferMessage<AcceptOfferRequest, ()>),
     CompleteTransaction(OfferMessage<CompleteTransactionRequest, CompleteTransactionResponse>),
     SignAttestation(OfferMessage<SignAttestationRequest, Signature>),
@@ -81,6 +82,10 @@ pub fn receive_message(sender_address: Address, message: String) -> String {
                     transaction_address,
                 )
                 .map(|result| MessageBody::GetChainSnapshot(OfferMessage::Response(result)))
+            }
+            MessageBody::CancelOffer(Message::Request(transaction_address)) => {
+                complete_transaction::cancel_offer::handle_cancel_offer(&transaction_address)
+                    .map(|result| MessageBody::CancelOffer(Message::Response(result)))
             }
             MessageBody::AcceptOffer(OfferMessage::Request(accept_offer_request)) => {
                 complete_transaction::accept_offer::receive_accept_offer(
