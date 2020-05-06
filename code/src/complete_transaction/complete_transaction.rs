@@ -108,6 +108,14 @@ pub fn handle_complete_transaction(
                 signature: Signature::from(my_signature),
             };
 
+            hdk::emit_signal(
+                "offer-completed",
+                JsonString::from_json(&format!(
+                    "{{transaction_address: \"{}\"}}",
+                    offer.transaction.address()?
+                )),
+            )?;
+
             Ok(response)
         }
         MessageBody::SignAttestation(OfferMessage::Response(OfferResponse::OfferCanceled)) => {
