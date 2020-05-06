@@ -29,7 +29,7 @@ pub fn receive_offer(sender_address: Address, transaction: Transaction) -> ZomeA
     let transaction_address = transaction.address()?;
     hdk::emit_signal(
         "offer received",
-        JsonString::from_json(&format!("{{transaction_address: \"{}\"}}", transaction_address)),
+        JsonString::from_json(&format!("{{\"transaction_address\": \"{}\"}}", transaction_address)),
     )?;
 
     Ok(())

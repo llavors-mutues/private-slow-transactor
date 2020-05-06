@@ -54,7 +54,7 @@ pub fn handle_cancel_offer(transaction_address: &Address) -> ZomeApiResult<()> {
 
     hdk::emit_signal(
         "offer-canceled",
-        JsonString::from_json(&format!("{{transaction_address: \"{}\"}}", transaction_address)),
+        JsonString::from_json(&format!("{{\"transaction_address\": \"{}\"}}", transaction_address)),
     )?;
 
     Ok(())

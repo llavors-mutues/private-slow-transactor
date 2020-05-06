@@ -111,7 +111,7 @@ pub fn handle_complete_transaction(
             hdk::emit_signal(
                 "offer-completed",
                 JsonString::from_json(&format!(
-                    "{{transaction_address: \"{}\"}}",
+                    "{{\"transaction_address\": \"{}\"}}",
                     offer.transaction.address()?
                 )),
             )?;
