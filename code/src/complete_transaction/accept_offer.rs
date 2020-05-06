@@ -158,10 +158,22 @@ fn handle_accept_offer(
     match result {
         MessageBody::CompleteTransaction(OfferMessage::Response(OfferResponse::OfferPending(
             complete_transaction_response,
-        ))) => create_attestation(
-            &complete_transaction_response.chain_headers,
-            &complete_transaction_response.signature,
-        ),
+        ))) => {
+            let attestation_address = create_attestation(
+                &complete_transaction_response.chain_headers,
+                &complete_transaction_response.signature,
+            )?;
+
+            hdk::emit_signal(
+                "offer-completed",
+                JsonString::from_json(&format!(
+                    "{{\"transaction_address\": \"{}\"}}",
+                    offer.transaction.address()?
+                )),
+            )?;
+
+            Ok(attestation_address)
+        }
         MessageBody::CompleteTransaction(OfferMessage::Response(OfferResponse::OfferCanceled)) => {
             offer::cancel_offer(&accept_offer_request.transaction_address)?;
             Err(ZomeApiError::from(format!("Offer was canceled")))
