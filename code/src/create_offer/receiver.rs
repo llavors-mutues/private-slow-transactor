@@ -21,9 +21,16 @@ pub fn receive_offer(sender_address: Address, transaction: Transaction) -> ZomeA
 
     let offer = Offer {
         state: OfferState::Pending,
-        transaction: transaction,
+        transaction: transaction.clone(),
     };
 
     hdk::commit_entry(&offer.entry())?;
+
+    let transaction_address = transaction.address()?;
+    hdk::emit_signal(
+        "offer received",
+        JsonString::from_json(&format!("{{transaction_address: {}}}", transaction_address)),
+    )?;
+
     Ok(())
 }
