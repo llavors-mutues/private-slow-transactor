@@ -1,6 +1,6 @@
 {
   "name": "holochain-mutual-credit",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1",
   "description": "MicroModule that implements mutual-credit on holochain",
   "scripts": {
     "clean": "rimraf dist",
@@ -31,6 +31,7 @@
     "apollo-boost": "^0.4.7",
     "graphql-tag": "^2.10.1",
     "graphql-tools": "^4.0.6",
+    "holochain-profiles": "^0.0.1",
     "inversify": "^5.0.1",
     "lit-element": "^2.2.3",
     "reflect-metadata": "^0.1.13"
@@ -67,6 +68,9 @@
     "type": "git",
     "url": "https://github.com/holochain-open-dev/mutual-credit/"
   },
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=10.0.0"
   }
