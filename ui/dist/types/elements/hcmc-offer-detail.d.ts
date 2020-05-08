@@ -11,17 +11,20 @@ export declare class MCOfferDetail extends MCOfferDetail_base {
     myAgentId: string;
     offer: Offer;
     accepting: boolean;
+    consenting: boolean;
     canceling: boolean;
     client: ApolloClient<any>;
     static get styles(): import("lit-element").CSSResult;
     updated(changedValues: PropertyValues): void;
     loadOffer(): Promise<void>;
     acceptOffer(): void;
+    consentOffer(): void;
     cancelOffer(): Promise<void>;
     isOutgoing(): boolean;
     getCounterparty(): Agent;
     renderCounterparty(): import("lit-element").TemplateResult;
-    placeholderMessage(): "Accepting offer..." | "Canceling offer..." | "Fetching and verifying counterparty chain...";
+    placeholderMessage(): "Accepting offer..." | "Canceling offer..." | "Consenting for offer..." | "Fetching and verifying counterparty chain...";
+    renderOfferForwardAction(): import("lit-element").TemplateResult;
     render(): import("lit-element").TemplateResult;
 }
 export {};

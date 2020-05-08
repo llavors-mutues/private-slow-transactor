@@ -122,6 +122,11 @@
     createOffer(creditorId: $creditorId, amount: $amount)
   }
 `;
+    const CONSENT_FOR_OFFER = gql `
+  mutation ConsentForOffer($transactionId: ID!) {
+    consentForOffer(transactionId: $transactionId)
+  }
+`;
     const ACCEPT_OFFER = gql `
   mutation AcceptOffer($transactionId: ID!, $approvedHeaderId: ID!) {
     acceptOffer(
@@ -295,9 +300,9 @@
             });
         }
         renderPlaceholder(type) {
-            return litElement.html `<span style="padding-top: 16px;"
-      >You have no ${type.toLowerCase()} offers</span
-    >`;
+            return litElement.html `<span style="padding-top: 16px;">
+      You have no ${type.toLowerCase()} offers
+    </span>`;
         }
         offerSelected(transactionId) {
             this.dispatchEvent(new CustomEvent('offer-selected', {
@@ -483,6 +488,7 @@
 
   extend type Mutation {
     createOffer(creditorId: ID!, amount: Float!): ID!
+    consentForOffer(transactionId: ID!): ID!
     cancelOffer(transactionId: ID!): ID!
     acceptOffer(transactionId: ID!, approvedHeaderId: ID!): ID!
   }
@@ -584,6 +590,7 @@
         constructor() {
             super(...arguments);
             this.accepting = false;
+            this.consenting = false;
             this.canceling = false;
         }
         static get styles() {
@@ -626,6 +633,25 @@
                 }));
             })
                 .finally(() => (this.accepting = false));
+        }
+        consentOffer() {
+            this.consenting = true;
+            this.client
+                .mutate({
+                mutation: CONSENT_FOR_OFFER,
+                variables: {
+                    transactionId: this.transactionId,
+                },
+            })
+                .then(() => {
+                this.dispatchEvent(new CustomEvent('offer-consented', {
+                    detail: { transactionId: this.transactionId },
+                    composed: true,
+                    bubbles: true,
+                }));
+                this.loadOffer();
+            })
+                .finally(() => (this.consenting = false));
         }
         async cancelOffer() {
             (this.canceling = true),
@@ -679,17 +705,26 @@
             >${cUsername} current status</span
           >
 
-          <span class="item">
-            Balance: ${this.offer.counterpartySnapshot.balance} credits
-          </span>
-          <span class="item">
-            Transaction history is
-            ${this.offer.counterpartySnapshot.valid ? 'valid' : 'invalid'}
-          </span>
-          <span class="item">
-            Offer is ${this.offer.counterpartySnapshot.executable ? '' : 'not'}
-            executable right now
-          </span>
+          ${this.offer.counterpartySnapshot
+            ? litElement.html `
+                <span class="item">
+                  Balance: ${this.offer.counterpartySnapshot.balance} credits
+                </span>
+                <span class="item">
+                  Transaction history is
+                  ${this.offer.counterpartySnapshot.valid ? 'valid' : 'invalid'}
+                </span>
+                <span class="item">
+                  Offer is
+                  ${this.offer.counterpartySnapshot.executable ? '' : 'not'}
+                  executable right now
+                </span>
+              `
+            : litElement.html `
+                <span class="item">
+                  ${cUsername} has not consented for to share their chain yet
+                </span>
+              `}
         </div>
       </div>
     `;
@@ -699,10 +734,35 @@
                 return 'Accepting offer...';
             if (this.canceling)
                 return 'Canceling offer...';
+            if (this.consenting)
+                return 'Consenting for offer...';
             return 'Fetching and verifying counterparty chain...';
         }
+        renderOfferForwardAction() {
+            if (this.isOutgoing())
+                return litElement.html `<span style="flex: 1; opacity: 0.8;">
+        Awaiting for approval
+      </span>`;
+            if (this.offer.state == 'Received')
+                return litElement.html `<mwc-button
+        style="flex: 1;"
+        label="CONSENT TO SHOW CHAIN"
+        raised
+        @click=${() => this.consentOffer()}
+      ></mwc-button>`;
+            return litElement.html `
+      <mwc-button
+        style="flex: 1;"
+        .disabled=${!this.offer.counterpartySnapshot.executable ||
+            this.offer.state !== 'Pending'}
+        label="ACCEPT"
+        raised
+        @click=${() => this.acceptOffer()}
+      ></mwc-button>
+    `;
+        }
         render() {
-            if (!this.offer || this.accepting || this.canceling)
+            if (!this.offer || this.accepting || this.canceling || this.consenting)
                 return litElement.html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
         <span style="margin-top: 18px;">${this.placeholderMessage()}</span>
@@ -716,20 +776,7 @@
             style="flex: 1; margin-right: 16px;"
             @click=${() => this.cancelOffer()}
           ></mwc-button>
-          ${this.isOutgoing()
-            ? litElement.html `<span style="flex: 1; opacity: 0.8;">
-                Awaiting for approval
-              </span>`
-            : litElement.html `
-                <mwc-button
-                  style="flex: 1;"
-                  .disabled=${!this.offer.counterpartySnapshot.executable ||
-                this.offer.state !== 'Pending'}
-                  label="ACCEPT"
-                  raised
-                  @click=${() => this.acceptOffer()}
-                ></mwc-button>
-              `}
+          ${this.renderOfferForwardAction()}
         </div>
       </div>
     `;
@@ -751,6 +798,10 @@
         litElement.property({ type: Boolean }),
         __metadata("design:type", Boolean)
     ], MCOfferDetail.prototype, "accepting", void 0);
+    __decorate([
+        litElement.property({ type: Boolean }),
+        __metadata("design:type", Boolean)
+    ], MCOfferDetail.prototype, "consenting", void 0);
     __decorate([
         litElement.property({ type: Boolean }),
         __metadata("design:type", Boolean)
