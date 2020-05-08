@@ -9,6 +9,7 @@ import {
   ACCEPT_OFFER,
   CANCEL_OFFER,
   GET_PENDING_OFFERS,
+  CONSENT_FOR_OFFER,
 } from 'src/graphql/queries';
 import { Agent } from 'holochain-profiles';
 
@@ -24,6 +25,9 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
 
   @property({ type: Boolean })
   accepting: boolean = false;
+
+  @property({ type: Boolean })
+  consenting: boolean = false;
 
   @property({ type: Boolean })
   canceling: boolean = false;
@@ -79,6 +83,29 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         );
       })
       .finally(() => (this.accepting = false));
+  }
+
+  consentOffer() {
+    this.consenting = true;
+
+    this.client
+      .mutate({
+        mutation: CONSENT_FOR_OFFER,
+        variables: {
+          transactionId: this.transactionId,
+        },
+      })
+      .then(() => {
+        this.dispatchEvent(
+          new CustomEvent('offer-consented', {
+            detail: { transactionId: this.transactionId },
+            composed: true,
+            bubbles: true,
+          })
+        );
+        this.loadOffer();
+      })
+      .finally(() => (this.consenting = false));
   }
 
   async cancelOffer() {
@@ -165,11 +192,36 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
   placeholderMessage() {
     if (this.accepting) return 'Accepting offer...';
     if (this.canceling) return 'Canceling offer...';
+    if (this.consenting) return 'Consenting for offer...';
     return 'Fetching and verifying counterparty chain...';
   }
 
+  renderOfferForwardAction() {
+    if (this.isOutgoing())
+      return html`<span style="flex: 1; opacity: 0.8;">
+        Awaiting for approval
+      </span>`;
+    if (this.offer.state == 'Received')
+      return html`<mwc-button
+        style="flex: 1;"
+        label="CONSENT TO SHOW CHAIN"
+        raised
+        @click=${() => this.consentOffer()}
+      ></mwc-button>`;
+    return html`
+      <mwc-button
+        style="flex: 1;"
+        .disabled=${!this.offer.counterpartySnapshot.executable ||
+        this.offer.state !== 'Pending'}
+        label="ACCEPT"
+        raised
+        @click=${() => this.acceptOffer()}
+      ></mwc-button>
+    `;
+  }
+
   render() {
-    if (!this.offer || this.accepting || this.canceling)
+    if (!this.offer || this.accepting || this.canceling || this.consenting)
       return html`<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
         <span style="margin-top: 18px;">${this.placeholderMessage()}</span>
@@ -184,20 +236,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
             style="flex: 1; margin-right: 16px;"
             @click=${() => this.cancelOffer()}
           ></mwc-button>
-          ${this.isOutgoing()
-            ? html`<span style="flex: 1; opacity: 0.8;">
-                Awaiting for approval
-              </span>`
-            : html`
-                <mwc-button
-                  style="flex: 1;"
-                  .disabled=${!this.offer.counterpartySnapshot.executable ||
-                  this.offer.state !== 'Pending'}
-                  label="ACCEPT"
-                  raised
-                  @click=${() => this.acceptOffer()}
-                ></mwc-button>
-              `}
+          ${this.renderOfferForwardAction()}
         </div>
       </div>
     `;
