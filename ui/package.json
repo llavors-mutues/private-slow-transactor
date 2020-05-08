@@ -1,6 +1,6 @@
 {
   "name": "holochain-mutual-credit",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "MicroModule that implements mutual-credit on holochain",
   "scripts": {
     "clean": "rimraf dist",
