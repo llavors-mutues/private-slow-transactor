@@ -68,7 +68,7 @@ function cancelOffer(transactionAddress) {
       transaction_address: transactionAddress,
     });
 }
-/* 
+
 orchestrator.registerScenario(
   "offer credits, accepting transactions and testing credit limits",
   async (s, t) => {
@@ -145,9 +145,9 @@ orchestrator.registerScenario(
     t.notOk(result.Ok);
   }
 );
- */
+ 
 orchestrator.registerScenario(
-  "offer credits, accepting transactions and testing credit limits",
+  "cancel offer works",
   async (s, t) => {
     const { alice, bob } = await s.players(
       { alice: conductorConfig, bob: conductorConfig },
