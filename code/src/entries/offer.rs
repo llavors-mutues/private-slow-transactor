@@ -13,6 +13,7 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub enum OfferState {
+    Received,
     Pending,
     Canceled,
     Approved {

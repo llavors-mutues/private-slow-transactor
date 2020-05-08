@@ -38,12 +38,19 @@ const orchestrator = new Orchestrator({
   },
 });
 
-function offerCredits(to, credits) {
+function createOffer(to, credits) {
   return (caller) =>
     caller.call("transactor", "transactor", "create_offer", {
       creditor_address: to,
       amount: credits,
       timestamp: Math.floor(Date.now() / 1000),
+    });
+}
+
+function consentForOffer(transactionAddress) {
+  return (caller) =>
+    caller.call("transactor", "transactor", "consent_for_offer", {
+      transaction_address: transactionAddress,
     });
 }
 
@@ -80,11 +87,18 @@ orchestrator.registerScenario(
     const aliceAddress = alice.instance("transactor").agentAddress;
     const bobAddress = bob.instance("transactor").agentAddress;
 
-    let result = await offerCredits(bobAddress, 10)(alice);
+    let result = await createOffer(bobAddress, 10)(alice);
     await s.consistency();
     t.ok(result.Ok);
-
+    
     let transactionAddress = result.Ok;
+    
+    result = await getCounterpartyBalance(transactionAddress)(alice);
+    t.notOk(result.Ok);
+    
+    result = await consentForOffer(transactionAddress)(bob);
+    await s.consistency();
+    t.ok(result.Ok);
 
     result = await getCounterpartyBalance(transactionAddress)(alice);
     t.equal(result.Ok.balance, 0);
@@ -101,11 +115,15 @@ orchestrator.registerScenario(
     await s.consistency();
     t.ok(result);
 
-    result = await offerCredits(bobAddress, 10)(alice);
+    result = await createOffer(bobAddress, 10)(alice);
     await s.consistency();
     t.ok(result.Ok);
 
     transactionAddress = result.Ok;
+
+    result = await consentForOffer(transactionAddress)(bob);
+    await s.consistency();
+    t.ok(result.Ok);
 
     result = await getCounterpartyBalance(transactionAddress)(alice);
     t.equal(result.Ok.balance, 10);
@@ -123,11 +141,15 @@ orchestrator.registerScenario(
     await s.consistency();
     t.ok(result);
 
-    result = await offerCredits(bobAddress, 81)(alice);
+    result = await createOffer(bobAddress, 81)(alice);
     await s.consistency();
     t.ok(result.Ok);
 
     transactionAddress = result.Ok;
+
+    result = await consentForOffer(transactionAddress)(bob);
+    await s.consistency();
+    t.ok(result.Ok);
 
     result = await getCounterpartyBalance(transactionAddress)(bob);
     t.equal(result.Ok.balance, -20);
@@ -145,43 +167,44 @@ orchestrator.registerScenario(
     t.notOk(result.Ok);
   }
 );
- 
-orchestrator.registerScenario(
-  "cancel offer works",
-  async (s, t) => {
-    const { alice, bob } = await s.players(
-      { alice: conductorConfig, bob: conductorConfig },
-      true
-    );
 
-    const aliceAddress = alice.instance("transactor").agentAddress;
-    const bobAddress = bob.instance("transactor").agentAddress;
+orchestrator.registerScenario("cancel offer works", async (s, t) => {
+  const { alice, bob } = await s.players(
+    { alice: conductorConfig, bob: conductorConfig },
+    true
+  );
 
-    let result = await offerCredits(bobAddress, 10)(alice);
-    await s.consistency();
-    t.ok(result.Ok);
+  const aliceAddress = alice.instance("transactor").agentAddress;
+  const bobAddress = bob.instance("transactor").agentAddress;
 
-    let transactionAddress = result.Ok;
+  let result = await createOffer(bobAddress, 10)(alice);
+  await s.consistency();
+  t.ok(result.Ok);
 
-    result = await getCounterpartyBalance(transactionAddress)(alice);
-    t.equal(result.Ok.balance, 0);
-    t.equal(result.Ok.executable, true);
+  let transactionAddress = result.Ok;
 
-    let last_header_address = result.Ok.last_header_address;
+  result = await consentForOffer(transactionAddress)(bob);
+  await s.consistency();
+  t.ok(result.Ok);
 
-    result = await cancelOffer(transactionAddress)(alice);
-    await s.consistency();
-    t.ok(result.hasOwnProperty('Ok'));
+  result = await getCounterpartyBalance(transactionAddress)(alice);
+  t.equal(result.Ok.balance, 0);
+  t.equal(result.Ok.executable, true);
 
-    result = await getCounterpartyBalance(transactionAddress)(alice);
-    t.notOk(result.Ok);
+  let last_header_address = result.Ok.last_header_address;
 
-    result = await getCounterpartyBalance(transactionAddress)(bob);
-    t.notOk(result.Ok);
+  result = await cancelOffer(transactionAddress)(alice);
+  await s.consistency();
+  t.ok(result.hasOwnProperty("Ok"));
 
-    result = await acceptOffer(transactionAddress, last_header_address)(bob);
-    t.notOk(result.Ok);
-  }
-);
+  result = await getCounterpartyBalance(transactionAddress)(alice);
+  t.notOk(result.Ok);
+
+  result = await getCounterpartyBalance(transactionAddress)(bob);
+  t.notOk(result.Ok);
+
+  result = await acceptOffer(transactionAddress, last_header_address)(bob);
+  t.notOk(result.Ok);
+});
 
 orchestrator.run();

@@ -20,7 +20,7 @@ pub fn receive_offer(sender_address: Address, transaction: Transaction) -> ZomeA
     }
 
     let offer = Offer {
-        state: OfferState::Pending,
+        state: OfferState::Received,
         transaction: transaction.clone(),
     };
 

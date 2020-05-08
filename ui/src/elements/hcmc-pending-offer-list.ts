@@ -43,14 +43,14 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
         this.myAgentId = result.data.me.id;
         this.offers = result.data.me.offers.filter(
           (offer) => offer.state !== 'Completed' && offer.state !== 'Canceled'
-          );
+        );
       });
   }
 
   renderPlaceholder(type: string) {
-    return html`<span style="padding-top: 16px;"
-      >You have no ${type.toLowerCase()} offers</span
-    >`;
+    return html`<span style="padding-top: 16px;">
+      You have no ${type.toLowerCase()} offers
+    </span>`;
   }
 
   offerSelected(transactionId: string) {

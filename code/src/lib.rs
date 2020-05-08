@@ -70,6 +70,15 @@ mod transactor {
     }
 
     #[zome_fn("hc_public")]
+    pub fn consent_for_offer(
+        transaction_address: Address
+    ) -> ZomeApiResult<Address> {
+        offer::update_offer_state(&transaction_address, offer::OfferState::Pending)?;
+
+        Ok(transaction_address)
+    }
+
+    #[zome_fn("hc_public")]
     pub fn get_counterparty_snapshot(
         transaction_address: Address,
     ) -> ZomeApiResult<CounterpartySnapshot> {

@@ -95,6 +95,12 @@ export const CREATE_OFFER = gql`
   }
 `;
 
+export const CONSENT_FOR_OFFER = gql`
+  mutation ConsentForOffer($transactionId: ID!) {
+    consentForOffer(transactionId: $transactionId)
+  }
+`;
+
 export const ACCEPT_OFFER = gql`
   mutation AcceptOffer($transactionId: ID!, $approvedHeaderId: ID!) {
     acceptOffer(
