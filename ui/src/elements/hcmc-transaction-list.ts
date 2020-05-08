@@ -34,7 +34,7 @@ export class MCTransactionList extends moduleConnect(LitElement) {
     });
 
     this.myAgentId = result.data.me.id;
-    this.transactions = result.data.myTransactions;
+    this.transactions = result.data.me.transactions;
   }
 
   isOutgoing(transaction: Transaction) {

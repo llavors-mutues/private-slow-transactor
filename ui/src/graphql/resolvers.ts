@@ -50,7 +50,9 @@ export const resolvers = {
       });
       return offerToTransaction(transactionId, offer);
     },
-    async myTransactions(_, __, { container }) {
+  },
+  Me: {
+    async transactions(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );
@@ -61,7 +63,7 @@ export const resolvers = {
       );
       return transactions.map((t) => ({ id: t[0], ...t[1] }));
     },
-    async myOffers(_, __, { container }) {
+    async offers(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );
@@ -70,7 +72,7 @@ export const resolvers = {
       console.log(offers);
       return offers.map((offer) => offerToTransaction(offer[0], offer[1]));
     },
-    async myBalance(_, __, { container }) {
+    async balance(_, __, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );

@@ -2,7 +2,10 @@ import gql from 'graphql-tag';
 
 export const GET_MY_BALANCE = gql`
   query GetMyBalance {
-    myBalance
+    me {
+      id
+      balance
+    }
   }
 `;
 
@@ -10,31 +13,7 @@ export const GET_MY_TRANSACTIONS = gql`
   query GetMyTransactions {
     me {
       id
-    }
-    myTransactions {
-      id
-      debtor {
-        id
-        username
-      }
-      creditor {
-        id
-        username
-      }
-      amount
-      timestamp
-    }
-  }
-`;
-
-export const GET_PENDING_OFFERS = gql`
-  query GetPendingOffers {
-    me {
-      id
-    }
-    myOffers {
-      id
-      transaction {
+      transactions {
         id
         debtor {
           id
@@ -47,7 +26,31 @@ export const GET_PENDING_OFFERS = gql`
         amount
         timestamp
       }
-      state
+    }
+  }
+`;
+
+export const GET_PENDING_OFFERS = gql`
+  query GetPendingOffers {
+    me {
+      id
+      offers {
+        id
+        transaction {
+          id
+          debtor {
+            id
+            username
+          }
+          creditor {
+            id
+            username
+          }
+          amount
+          timestamp
+        }
+        state
+      }
     }
   }
 `;
@@ -57,7 +60,7 @@ export const GET_OFFER_DETAIL = gql`
     me {
       id
     }
-    
+
     offer(transactionId: $transactionId) {
       id
       transaction {
@@ -103,8 +106,6 @@ export const ACCEPT_OFFER = gql`
 
 export const CANCEL_OFFER = gql`
   mutation CancelOffer($transactionId: ID!) {
-    cancelOffer(
-      transactionId: $transactionId
-    )
+    cancelOffer(transactionId: $transactionId)
   }
 `;

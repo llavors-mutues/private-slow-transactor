@@ -37,10 +37,13 @@ export const mutualCreditTypeDefs = gql`
     state: OfferState!
   }
 
+  extend type Me {
+    transactions: [Transaction!]!
+    offers: [Offer!]!
+    balance: Float!
+  }
+
   extend type Query {
-    myTransactions: [Transaction!]!
-    myOffers: [Offer!]!
-    myBalance: Float!
     offer(transactionId: ID!): Offer!
   }
 

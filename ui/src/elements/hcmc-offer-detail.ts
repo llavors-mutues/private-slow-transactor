@@ -93,11 +93,11 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
             query: GET_PENDING_OFFERS,
           });
 
-          const offers = pendingOffers.myOffers.filter(
+          const offers = pendingOffers.me.offers.filter(
             (o) => o.id !== this.transactionId
           );
 
-          pendingOffers.myOffers = offers;
+          pendingOffers.me.offers = offers;
 
           cache.writeQuery({ query: GET_PENDING_OFFERS, data: pendingOffers });
         },

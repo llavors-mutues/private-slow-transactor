@@ -41,7 +41,7 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
       })
       .subscribe((result) => {
         this.myAgentId = result.data.me.id;
-        this.offers = result.data.myOffers.filter(
+        this.offers = result.data.me.offers.filter(
           (offer) => offer.state !== 'Completed' && offer.state !== 'Canceled'
           );
       });

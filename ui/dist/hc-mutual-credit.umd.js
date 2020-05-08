@@ -34,37 +34,17 @@
 
     const GET_MY_BALANCE = gql `
   query GetMyBalance {
-    myBalance
+    me {
+      id
+      balance
+    }
   }
 `;
     const GET_MY_TRANSACTIONS = gql `
   query GetMyTransactions {
     me {
       id
-    }
-    myTransactions {
-      id
-      debtor {
-        id
-        username
-      }
-      creditor {
-        id
-        username
-      }
-      amount
-      timestamp
-    }
-  }
-`;
-    const GET_PENDING_OFFERS = gql `
-  query GetPendingOffers {
-    me {
-      id
-    }
-    myOffers {
-      id
-      transaction {
+      transactions {
         id
         debtor {
           id
@@ -77,7 +57,30 @@
         amount
         timestamp
       }
-      state
+    }
+  }
+`;
+    const GET_PENDING_OFFERS = gql `
+  query GetPendingOffers {
+    me {
+      id
+      offers {
+        id
+        transaction {
+          id
+          debtor {
+            id
+            username
+          }
+          creditor {
+            id
+            username
+          }
+          amount
+          timestamp
+        }
+        state
+      }
     }
   }
 `;
@@ -86,7 +89,7 @@
     me {
       id
     }
-    
+
     offer(transactionId: $transactionId) {
       id
       transaction {
@@ -129,9 +132,7 @@
 `;
     const CANCEL_OFFER = gql `
   mutation CancelOffer($transactionId: ID!) {
-    cancelOffer(
-      transactionId: $transactionId
-    )
+    cancelOffer(transactionId: $transactionId)
   }
 `;
 
@@ -290,7 +291,7 @@
             })
                 .subscribe((result) => {
                 this.myAgentId = result.data.me.id;
-                this.offers = result.data.myOffers.filter((offer) => offer.state !== 'Completed' && offer.state !== 'Canceled');
+                this.offers = result.data.me.offers.filter((offer) => offer.state !== 'Completed' && offer.state !== 'Canceled');
             });
         }
         renderPlaceholder(type) {
@@ -371,7 +372,7 @@
                 fetchPolicy: 'network-only',
             });
             this.myAgentId = result.data.me.id;
-            this.transactions = result.data.myTransactions;
+            this.transactions = result.data.me.transactions;
         }
         isOutgoing(transaction) {
             return transaction.debtor.id === this.myAgentId;
@@ -470,10 +471,13 @@
     state: OfferState!
   }
 
+  extend type Me {
+    transactions: [Transaction!]!
+    offers: [Offer!]!
+    balance: Float!
+  }
+
   extend type Query {
-    myTransactions: [Transaction!]!
-    myOffers: [Offer!]!
-    myBalance: Float!
     offer(transactionId: ID!): Offer!
   }
 
@@ -530,18 +534,20 @@
                 });
                 return offerToTransaction(transactionId, offer);
             },
-            async myTransactions(_, __, { container }) {
+        },
+        Me: {
+            async transactions(_, __, { container }) {
                 const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
                 const transactions = await mutualCreditProvider.call('query_my_transactions', {});
                 return transactions.map((t) => ({ id: t[0], ...t[1] }));
             },
-            async myOffers(_, __, { container }) {
+            async offers(_, __, { container }) {
                 const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
                 const offers = await mutualCreditProvider.call('query_my_offers', {});
                 console.log(offers);
                 return offers.map((offer) => offerToTransaction(offer[0], offer[1]));
             },
-            async myBalance(_, __, { container }) {
+            async balance(_, __, { container }) {
                 const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
                 const result = await mutualCreditProvider.call('query_my_balance', {});
                 return result.hasOwnProperty('Ok') ? result.Ok : result;
@@ -632,8 +638,8 @@
                         const pendingOffers = cache.readQuery({
                             query: GET_PENDING_OFFERS,
                         });
-                        const offers = pendingOffers.myOffers.filter((o) => o.id !== this.transactionId);
-                        pendingOffers.myOffers = offers;
+                        const offers = pendingOffers.me.offers.filter((o) => o.id !== this.transactionId);
+                        pendingOffers.me.offers = offers;
                         cache.writeQuery({ query: GET_PENDING_OFFERS, data: pendingOffers });
                     },
                 });

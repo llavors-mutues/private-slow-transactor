@@ -25,13 +25,15 @@ export declare const resolvers: {
             transaction: any;
             state: any;
         }>;
-        myTransactions(_: any, __: any, { container }: {
+    };
+    Me: {
+        transactions(_: any, __: any, { container }: {
             container: any;
         }): Promise<any>;
-        myOffers(_: any, __: any, { container }: {
+        offers(_: any, __: any, { container }: {
             container: any;
         }): Promise<any>;
-        myBalance(_: any, __: any, { container }: {
+        balance(_: any, __: any, { container }: {
             container: any;
         }): Promise<any>;
     };
