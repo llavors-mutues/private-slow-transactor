@@ -173,17 +173,26 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
             >${cUsername} current status</span
           >
 
-          <span class="item">
-            Balance: ${this.offer.counterpartySnapshot.balance} credits
-          </span>
-          <span class="item">
-            Transaction history is
-            ${this.offer.counterpartySnapshot.valid ? 'valid' : 'invalid'}
-          </span>
-          <span class="item">
-            Offer is ${this.offer.counterpartySnapshot.executable ? '' : 'not'}
-            executable right now
-          </span>
+          ${this.offer.counterpartySnapshot
+            ? html`
+                <span class="item">
+                  Balance: ${this.offer.counterpartySnapshot.balance} credits
+                </span>
+                <span class="item">
+                  Transaction history is
+                  ${this.offer.counterpartySnapshot.valid ? 'valid' : 'invalid'}
+                </span>
+                <span class="item">
+                  Offer is
+                  ${this.offer.counterpartySnapshot.executable ? '' : 'not'}
+                  executable right now
+                </span>
+              `
+            : html`
+                <span class="item">
+                  ${cUsername} has not consented for to share their chain yet
+                </span>
+              `}
         </div>
       </div>
     `;
