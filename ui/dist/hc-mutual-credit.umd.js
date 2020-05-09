@@ -522,9 +522,16 @@
         Offer: {
             async counterpartySnapshot(parent, _, { container }) {
                 const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
-                return mutualCreditProvider.call('get_counterparty_snapshot', {
-                    transaction_address: parent.id,
-                });
+                try {
+                    const snapshot = await mutualCreditProvider.call('get_counterparty_snapshot', {
+                        transaction_address: parent.id,
+                    });
+                    return snapshot;
+                }
+                catch (e) {
+                    if (e.message.includes('Offer is not pending'))
+                        return null;
+                }
             },
         },
         CounterpartySnapshot: {
@@ -573,6 +580,13 @@
                 await mutualCreditProvider.call('accept_offer', {
                     transaction_address: transactionId,
                     approved_header_address: approvedHeaderId,
+                });
+                return transactionId;
+            },
+            async consentForOffer(_, { transactionId }, { container }) {
+                const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
+                await mutualCreditProvider.call('consent_for_offer', {
+                    transaction_address: transactionId,
                 });
                 return transactionId;
             },

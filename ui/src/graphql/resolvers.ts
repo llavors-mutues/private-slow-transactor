@@ -113,6 +113,17 @@ export const resolvers = {
 
       return transactionId;
     },
+    async consentForOffer(_, { transactionId }, { container }) {
+      const mutualCreditProvider: HolochainProvider = container.get(
+        MutualCreditBindings.MutualCreditProvider
+      );
+
+      await mutualCreditProvider.call('consent_for_offer', {
+        transaction_address: transactionId,
+      });
+
+      return transactionId;
+    },
     async cancelOffer(_, { transactionId }, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
