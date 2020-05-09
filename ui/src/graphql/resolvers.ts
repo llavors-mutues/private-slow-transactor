@@ -29,9 +29,17 @@ export const resolvers = {
         MutualCreditBindings.MutualCreditProvider
       );
 
-      return mutualCreditProvider.call('get_counterparty_snapshot', {
-        transaction_address: parent.id,
-      });
+      try {
+        const snapshot = await mutualCreditProvider.call(
+          'get_counterparty_snapshot',
+          {
+            transaction_address: parent.id,
+          }
+        );
+        return snapshot;
+      } catch (e) {
+        if (e.message.includes('Offer is not pending')) return null;
+      }
     },
   },
   CounterpartySnapshot: {

@@ -29,7 +29,7 @@ pub fn get_chain_snapshot(
         }
         OfferState::Canceled => Ok(OfferResponse::OfferCanceled),
         _ => Err(ZomeApiError::from(String::from(
-            "Offer is neither pending nor approved nor canceled: cannot get the chain_snapshot ",
+            "Offer is not pending nor approved: cannot get the chain_snapshot ",
         ))),
     }
 }
