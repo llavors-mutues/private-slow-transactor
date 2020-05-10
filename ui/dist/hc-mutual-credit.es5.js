@@ -159,7 +159,7 @@ const sharedStyles = css `
   }
 
   .placeholder {
-    opacity: 0.5;
+    opacity: 0.7;
   }
 
   .fill {
@@ -353,7 +353,7 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
             : offer.transaction.creditor;
     }
     renderOfferList(title, offers) {
-        return html `<div class="column " style="margin-bottom: 24px;">
+        return html `<div class="column">
       <span class="title">${title} offers</span>
 
       ${offers.length === 0
@@ -403,7 +403,9 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
         >
       </div>`;
         return html `<div class="column fill">
-      ${this.renderOfferList('Incoming', this.getIncoming())}
+      <div style="margin-bottom: 24px;">
+        ${this.renderOfferList('Incoming', this.getIncoming())}
+      </div>
       ${this.renderOfferList('Outgoing', this.getOutgoing())}
     </div>`;
     }

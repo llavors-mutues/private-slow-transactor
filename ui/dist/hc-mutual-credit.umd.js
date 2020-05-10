@@ -153,7 +153,7 @@
   }
 
   .placeholder {
-    opacity: 0.5;
+    opacity: 0.7;
   }
 
   .fill {
@@ -347,7 +347,7 @@
                 : offer.transaction.creditor;
         }
         renderOfferList(title, offers) {
-            return litElement.html `<div class="column " style="margin-bottom: 24px;">
+            return litElement.html `<div class="column">
       <span class="title">${title} offers</span>
 
       ${offers.length === 0
@@ -397,7 +397,9 @@
         >
       </div>`;
             return litElement.html `<div class="column fill">
-      ${this.renderOfferList('Incoming', this.getIncoming())}
+      <div style="margin-bottom: 24px;">
+        ${this.renderOfferList('Incoming', this.getIncoming())}
+      </div>
       ${this.renderOfferList('Outgoing', this.getOutgoing())}
     </div>`;
         }

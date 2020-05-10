@@ -85,7 +85,7 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
   }
 
   renderOfferList(title: string, offers: Offer[]) {
-    return html`<div class="column " style="margin-bottom: 24px;">
+    return html`<div class="column">
       <span class="title">${title} offers</span>
 
       ${offers.length === 0
@@ -139,7 +139,9 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
       </div>`;
 
     return html`<div class="column fill">
-      ${this.renderOfferList('Incoming', this.getIncoming())}
+      <div style="margin-bottom: 24px;">
+        ${this.renderOfferList('Incoming', this.getIncoming())}
+      </div>
       ${this.renderOfferList('Outgoing', this.getOutgoing())}
     </div>`;
   }
