@@ -72,6 +72,19 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
           transactionId: this.transactionId,
           approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
         },
+        update: (cache, result) => {
+          const pendingOffers: any = cache.readQuery({
+            query: GET_PENDING_OFFERS,
+          });
+
+          pendingOffers.me.offers.find((o) => o.id === this.offer.id).state =
+            'Completed';
+
+          cache.writeQuery({
+            query: GET_PENDING_OFFERS,
+            data: pendingOffers,
+          });
+        },
       })
       .then(() => {
         this.dispatchEvent(
@@ -160,9 +173,8 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
           <span class="item">Agend ID: ${this.getCounterparty().id}</span>
 
           <span class="item">
-            Transaction amount:
-            ${this.isOutgoing() ? '-' : '+'}${this.offer.transaction.amount}
-            credits
+            Transaction amount: ${this.isOutgoing() ? '-' : '+'}
+            ${this.offer.transaction.amount} credits
           </span>
           <span class="item">
             Date:
