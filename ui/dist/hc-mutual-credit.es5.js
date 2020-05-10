@@ -730,6 +730,8 @@ class MCOfferDetail extends moduleConnect(LitElement) {
           <span class="item">
             Date:
             ${new Date(this.offer.transaction.timestamp * 1000).toLocaleTimeString()}
+            on
+            ${new Date(this.offer.transaction.timestamp * 1000).toLocaleDateString()}
           </span>
 
           <span class="item title" style="margin-top: 16px;"
@@ -756,7 +758,9 @@ class MCOfferDetail extends moduleConnect(LitElement) {
                   ${this.offer.state !== 'Received'
                 ? `${cUsername} has `
                 : 'You have '}
-                  not consented for to share their chain yet
+                  not consented for to share
+                  ${this.offer.state !== 'Received' ? 'their' : 'your'} source
+                  chain yet
                 </span>
               `}
         </div>
@@ -774,9 +778,15 @@ class MCOfferDetail extends moduleConnect(LitElement) {
     }
     renderOfferForwardAction() {
         if (this.isOutgoing())
-            return html `<span style="flex: 1; opacity: 0.8;">
-        Awaiting for approval
-      </span>`;
+            return html `<mwc-button
+        style="flex: 1;"
+        .label="Awaiting for ${this.offer.counterpartySnapshot
+                ? 'approval'
+                : 'consent'}"
+        disabled
+        raised
+      >
+      </mwc-button>`;
         if (this.offer.state == 'Received')
             return html `<mwc-button
         style="flex: 1;"
