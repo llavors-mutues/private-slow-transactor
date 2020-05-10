@@ -466,9 +466,8 @@ class MCTransactionList extends moduleConnect(LitElement) {
                 >
               </mwc-list-item>
 
-              <span style="font-weight: bold; margin-right: 24px;">
-                ${this.isOutgoing(transaction) ? '-' : '+'}
-                ${transaction.amount} credits
+              <span style="font-size: 24px; margin-right: 24px;">
+                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount} credits
               </span>
             </div>
             ${i < this.transactions.length - 1
@@ -843,7 +842,7 @@ class MCOfferDetail extends moduleConnect(LitElement) {
         style="flex: 1;"
         .disabled=${!this.offer.counterpartySnapshot.executable ||
             this.offer.state !== 'Pending'}
-        label="ACCEPT"
+        label="ACCEPT AND COMPLETE TRANSACTION"
         raised
         @click=${() => this.acceptOffer()}
       ></mwc-button>
@@ -860,7 +859,7 @@ class MCOfferDetail extends moduleConnect(LitElement) {
         ${this.renderCounterparty()}
         <div class="row center-content" style="margin-top: 24px;">
           <mwc-button
-            label="CANCEL"
+            label="CANCEL OFFER"
             style="flex: 1; margin-right: 16px;"
             @click=${() => this.cancelOffer()}
           ></mwc-button>

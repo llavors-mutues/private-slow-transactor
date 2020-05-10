@@ -244,7 +244,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         style="flex: 1;"
         .disabled=${!this.offer.counterpartySnapshot.executable ||
         this.offer.state !== 'Pending'}
-        label="ACCEPT"
+        label="ACCEPT AND COMPLETE TRANSACTION"
         raised
         @click=${() => this.acceptOffer()}
       ></mwc-button>
@@ -263,7 +263,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         ${this.renderCounterparty()}
         <div class="row center-content" style="margin-top: 24px;">
           <mwc-button
-            label="CANCEL"
+            label="CANCEL OFFER"
             style="flex: 1; margin-right: 16px;"
             @click=${() => this.cancelOffer()}
           ></mwc-button>

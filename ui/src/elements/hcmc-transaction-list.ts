@@ -97,9 +97,8 @@ export class MCTransactionList extends moduleConnect(LitElement) {
                 >
               </mwc-list-item>
 
-              <span style="font-weight: bold; margin-right: 24px;">
-                ${this.isOutgoing(transaction) ? '-' : '+'}
-                ${transaction.amount} credits
+              <span style="font-size: 24px; margin-right: 24px;">
+                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount} credits
               </span>
             </div>
             ${i < this.transactions.length - 1
