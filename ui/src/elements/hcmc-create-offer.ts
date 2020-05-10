@@ -8,6 +8,7 @@ import '@material/mwc-textfield';
 import '@material/mwc-button';
 import { TextFieldBase } from '@material/mwc-textfield/mwc-textfield-base';
 import { sharedStyles } from './sharedStyles';
+import { Agent } from 'holochain-profiles';
 
 export class MCCreateOffer extends moduleConnect(LitElement) {
   @query('#amount')
@@ -20,7 +21,7 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
   open: boolean = false;
 
   @property({ type: String })
-  creditor: string | undefined = undefined;
+  creditor: Agent | undefined = undefined;
 
   client!: ApolloClient<any>;
 
@@ -74,17 +75,26 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
         heading="Create New Offer"
       >
         <div class="column center-content">
+          <span>
+            You are about to create an offer
+            ${this.creditor ? `to @${this.creditor.username}` : ''}, which would
+            lower your balance by the amount of the transaction and raise the
+            creditor's value by the same amount.
+            <br /><br />
+            This will let the creditor scan your source chain to validate your
+            transaction history.
+          </span>
           <mwc-textfield
             .disabled=${this.creditor !== undefined}
-            .value=${this.creditor}
-            style="padding-bottom: 16px; width: 24em;"
+            .value=${this.creditor && this.creditor.id}
+            style="padding: 16px 0; width: 24em;"
             id="creditor"
             label="Creditor"
             autoValidate
           ></mwc-textfield>
 
           <mwc-textfield
-            style="padding: 16px 0;"
+            style="padding-top: 16px;"
             label="Amount"
             type="number"
             id="amount"

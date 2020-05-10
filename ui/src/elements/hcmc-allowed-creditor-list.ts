@@ -15,8 +15,8 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
   @query('#create-offer-dialog')
   createOfferDialog!: MCCreateOffer;
 
-  @property({ type: String })
-  selectedCreditor: string | undefined = undefined;
+  @property({ type: Object })
+  selectedCreditor: Agent | undefined = undefined;
 
   @property({ type: Array })
   agents: Agent[] | undefined = undefined;
@@ -71,8 +71,9 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
         <mwc-button
           label="Offer credits"
           style="padding-right: 16px;"
+          outlined
           @click=${() => {
-            this.selectedCreditor = agent.id;
+            this.selectedCreditor = agent;
             this.createOfferDialog.open = true;
           }}
         ></mwc-button>

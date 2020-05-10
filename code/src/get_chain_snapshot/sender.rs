@@ -34,20 +34,24 @@ pub fn get_counterparty_snapshot(
 
     let chain_snapshot = request_chain_snapshot(&transaction_address, &counterparty_address)?;
 
-    validate_snapshot_is_valid(&counterparty_address, &chain_snapshot)?;
-
     let mut transactions =
         transaction::get_transactions_from_chain_snapshot(chain_snapshot.snapshot.clone());
 
+    let valid = match validate_snapshot_is_valid(&counterparty_address, &chain_snapshot) {
+        Ok(()) => {
+            transaction::are_transactions_valid(&offer.transaction.debtor_address, &transactions)
+                .is_ok()
+        }
+        Err(_) => false,
+    };
+
     let balance = transaction::compute_balance(&counterparty_address, &transactions);
-    let valid =
-        transaction::are_transactions_valid(&offer.transaction.debtor_address, &transactions)?;
 
     // Add offer to the transaction list to verify that it is valid
     transactions.push(offer.transaction.clone());
 
-    let executable =
-        transaction::are_transactions_valid(&offer.transaction.debtor_address, &transactions)?;
+    let executable = valid
+        && transaction::are_transactions_valid(&offer.transaction.debtor_address, &transactions)?;
 
     Ok(CounterpartySnapshot {
         balance,

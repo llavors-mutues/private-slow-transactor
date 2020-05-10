@@ -8,7 +8,7 @@ declare const MCAllowedCreditorList_base: {
 } & typeof LitElement;
 export declare class MCAllowedCreditorList extends MCAllowedCreditorList_base {
     createOfferDialog: MCCreateOffer;
-    selectedCreditor: string | undefined;
+    selectedCreditor: Agent | undefined;
     agents: Agent[] | undefined;
     client: ApolloClient<any>;
     static get styles(): import("lit-element").CSSResult;

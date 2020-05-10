@@ -162,7 +162,7 @@
   }
 
   .item {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
   .padding {
@@ -224,17 +224,26 @@
         heading="Create New Offer"
       >
         <div class="column center-content">
+          <span>
+            You are about to create an offer
+            ${this.creditor ? `to @${this.creditor.username}` : ''}, which would
+            lower your balance by the amount of the transaction and raise the
+            creditor's value by the same amount.
+            <br /><br />
+            This will let the creditor scan your source chain to validate your
+            transaction history.
+          </span>
           <mwc-textfield
             .disabled=${this.creditor !== undefined}
-            .value=${this.creditor}
-            style="padding-bottom: 16px; width: 24em;"
+            .value=${this.creditor && this.creditor.id}
+            style="padding: 16px 0; width: 24em;"
             id="creditor"
             label="Creditor"
             autoValidate
           ></mwc-textfield>
 
           <mwc-textfield
-            style="padding: 16px 0;"
+            style="padding-top: 16px;"
             label="Amount"
             type="number"
             id="amount"
@@ -708,14 +717,16 @@
           <span class="item">Agend ID: ${this.getCounterparty().id}</span>
 
           <span class="item">
-            Transaction amount: ${this.offer.transaction.amount} credits
+            Transaction amount:
+            ${this.isOutgoing() ? '-' : '+'}${this.offer.transaction.amount}
+            credits
           </span>
           <span class="item">
             Date:
-            ${new Date(this.offer.transaction.timestamp * 1000).toLocaleDateString()}
+            ${new Date(this.offer.transaction.timestamp * 1000).toLocaleTimeString()}
           </span>
 
-          <span class="item title" style="margin-top: 8px;"
+          <span class="item title" style="margin-top: 16px;"
             >${cUsername} current status</span
           >
 
@@ -736,7 +747,10 @@
               `
             : litElement.html `
                 <span class="item">
-                  ${cUsername} has not consented for to share their chain yet
+                  ${this.offer.state !== 'Received'
+                ? `${cUsername} has `
+                : 'You have '}
+                  not consented for to share their chain yet
                 </span>
               `}
         </div>
@@ -784,7 +798,7 @@
             return litElement.html `
       <div class="column">
         ${this.renderCounterparty()}
-        <div class="row center-content" style="margin-top: 4px;">
+        <div class="row center-content" style="margin-top: 24px;">
           <mwc-button
             label="CANCEL"
             style="flex: 1; margin-right: 16px;"
@@ -880,8 +894,9 @@
         <mwc-button
           label="Offer credits"
           style="padding-right: 16px;"
+          outlined
           @click=${() => {
-            this.selectedCreditor = agent.id;
+            this.selectedCreditor = agent;
             this.createOfferDialog.open = true;
         }}
         ></mwc-button>
@@ -918,7 +933,7 @@
         __metadata("design:type", MCCreateOffer)
     ], MCAllowedCreditorList.prototype, "createOfferDialog", void 0);
     __decorate([
-        litElement.property({ type: String }),
+        litElement.property({ type: Object }),
         __metadata("design:type", Object)
     ], MCAllowedCreditorList.prototype, "selectedCreditor", void 0);
     __decorate([
