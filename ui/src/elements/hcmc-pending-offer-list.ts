@@ -21,6 +21,9 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
   @property({ type: Object, attribute: false })
   offers!: Offer[];
 
+  @property({ type: String })
+  lastSelectedOfferId: string | undefined = undefined;
+
   static get styles() {
     return [
       sharedStyles,
@@ -60,6 +63,7 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
         detail: { transactionId, composed: true, bubbles: true },
       })
     );
+    this.lastSelectedOfferId = transactionId;
   }
 
   isOutgoing(offer: Offer): boolean {
@@ -89,11 +93,13 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
         : html`
             <mwc-list>
               ${offers.map(
-                (offer) => html`
+                (offer, index) => html`
                   <mwc-list-item
                     @click=${() => this.offerSelected(offer.id)}
                     graphic="avatar"
                     twoline
+                    .activated=${this.lastSelectedOfferId &&
+                    this.lastSelectedOfferId === offer.id}
                   >
                     <span>
                       ${offer.transaction.amount} credits
@@ -113,6 +119,9 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
                         : 'call_received'}</mwc-icon
                     >
                   </mwc-list-item>
+                  ${index < this.offers.length - 1
+                    ? html`<li divider padded role="separator"></li> `
+                    : html``}
                 `
               )}
             </mwc-list>
@@ -124,6 +133,9 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
     if (!this.offers)
       return html`<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
+        <span class="placeholder" style="margin-top: 18px;"
+          >Fetching pending offers...</span
+        >
       </div>`;
 
     return html`<div class="column fill">

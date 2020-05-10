@@ -255,7 +255,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     if (!this.offer || this.accepting || this.canceling || this.consenting)
       return html`<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 18px;">${this.placeholderMessage()}</span>
+        <span style="margin-top: 18px;" class="placeholder">${this.placeholderMessage()}</span>
       </div>`;
 
     return html`

@@ -158,6 +158,10 @@ const sharedStyles = css `
     flex-direction: row;
   }
 
+  .placeholder {
+    opacity: 0.5;
+  }
+
   .fill {
     flex: 1;
   }
@@ -297,6 +301,10 @@ function dateString(timestamp) {
 }
 
 class MCPendingOfferList extends moduleConnect(LitElement) {
+    constructor() {
+        super(...arguments);
+        this.lastSelectedOfferId = undefined;
+    }
     static get styles() {
         return [
             sharedStyles,
@@ -328,6 +336,7 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
         this.dispatchEvent(new CustomEvent('offer-selected', {
             detail: { transactionId, composed: true, bubbles: true },
         }));
+        this.lastSelectedOfferId = transactionId;
     }
     isOutgoing(offer) {
         return offer.transaction.debtor.id === this.myAgentId;
@@ -351,11 +360,13 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
             ? this.renderPlaceholder(title)
             : html `
             <mwc-list>
-              ${offers.map((offer) => html `
+              ${offers.map((offer, index) => html `
                   <mwc-list-item
                     @click=${() => this.offerSelected(offer.id)}
                     graphic="avatar"
                     twoline
+                    .activated=${this.lastSelectedOfferId &&
+                this.lastSelectedOfferId === offer.id}
                   >
                     <span>
                       ${offer.transaction.amount} credits
@@ -375,6 +386,9 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
                 : 'call_received'}</mwc-icon
                     >
                   </mwc-list-item>
+                  ${index < this.offers.length - 1
+                ? html `<li divider padded role="separator"></li> `
+                : html ``}
                 `)}
             </mwc-list>
           `}
@@ -384,6 +398,9 @@ class MCPendingOfferList extends moduleConnect(LitElement) {
         if (!this.offers)
             return html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
+        <span class="placeholder" style="margin-top: 18px;"
+          >Fetching pending offers...</span
+        >
       </div>`;
         return html `<div class="column fill">
       ${this.renderOfferList('Incoming', this.getIncoming())}
@@ -399,6 +416,10 @@ __decorate([
     property({ type: Object, attribute: false }),
     __metadata("design:type", Array)
 ], MCPendingOfferList.prototype, "offers", void 0);
+__decorate([
+    property({ type: String }),
+    __metadata("design:type", Object)
+], MCPendingOfferList.prototype, "lastSelectedOfferId", void 0);
 
 class MCTransactionList extends moduleConnect(LitElement) {
     static get styles() {
@@ -411,7 +432,7 @@ class MCTransactionList extends moduleConnect(LitElement) {
             fetchPolicy: 'network-only',
         });
         this.myAgentId = result.data.me.id;
-        this.transactions = result.data.me.transactions;
+        this.transactions = result.data.me.transactions.sort((t1, t2) => t1.timestamp - t2.timestamp);
     }
     isOutgoing(transaction) {
         return transaction.debtor.id === this.myAgentId;
@@ -429,8 +450,11 @@ class MCTransactionList extends moduleConnect(LitElement) {
     renderContent() {
         if (!this.transactions)
             return html `
-        <div class="padding center-content">
+        <div class="padding center-content column">
           <mwc-circular-progress></mwc-circular-progress>
+          <span class="placeholder" style="margin-top: 18px;"
+            >Fetching transaction history...</span
+          >
         </div>
       `;
         if (this.transactions.length === 0)
@@ -467,7 +491,8 @@ class MCTransactionList extends moduleConnect(LitElement) {
               </mwc-list-item>
 
               <span style="font-size: 20px; margin-right: 24px;">
-                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount} credits
+                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount}
+                credits
               </span>
             </div>
             ${i < this.transactions.length - 1
@@ -852,7 +877,7 @@ class MCOfferDetail extends moduleConnect(LitElement) {
         if (!this.offer || this.accepting || this.canceling || this.consenting)
             return html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 18px;">${this.placeholderMessage()}</span>
+        <span style="margin-top: 18px;" class="placeholder">${this.placeholderMessage()}</span>
       </div>`;
         return html `
       <div class="column">

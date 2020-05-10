@@ -152,6 +152,10 @@
     flex-direction: row;
   }
 
+  .placeholder {
+    opacity: 0.5;
+  }
+
   .fill {
     flex: 1;
   }
@@ -291,6 +295,10 @@
     }
 
     class MCPendingOfferList extends microOrchestrator.moduleConnect(litElement.LitElement) {
+        constructor() {
+            super(...arguments);
+            this.lastSelectedOfferId = undefined;
+        }
         static get styles() {
             return [
                 sharedStyles,
@@ -322,6 +330,7 @@
             this.dispatchEvent(new CustomEvent('offer-selected', {
                 detail: { transactionId, composed: true, bubbles: true },
             }));
+            this.lastSelectedOfferId = transactionId;
         }
         isOutgoing(offer) {
             return offer.transaction.debtor.id === this.myAgentId;
@@ -345,11 +354,13 @@
             ? this.renderPlaceholder(title)
             : litElement.html `
             <mwc-list>
-              ${offers.map((offer) => litElement.html `
+              ${offers.map((offer, index) => litElement.html `
                   <mwc-list-item
                     @click=${() => this.offerSelected(offer.id)}
                     graphic="avatar"
                     twoline
+                    .activated=${this.lastSelectedOfferId &&
+                this.lastSelectedOfferId === offer.id}
                   >
                     <span>
                       ${offer.transaction.amount} credits
@@ -369,6 +380,9 @@
                 : 'call_received'}</mwc-icon
                     >
                   </mwc-list-item>
+                  ${index < this.offers.length - 1
+                ? litElement.html `<li divider padded role="separator"></li> `
+                : litElement.html ``}
                 `)}
             </mwc-list>
           `}
@@ -378,6 +392,9 @@
             if (!this.offers)
                 return litElement.html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
+        <span class="placeholder" style="margin-top: 18px;"
+          >Fetching pending offers...</span
+        >
       </div>`;
             return litElement.html `<div class="column fill">
       ${this.renderOfferList('Incoming', this.getIncoming())}
@@ -393,6 +410,10 @@
         litElement.property({ type: Object, attribute: false }),
         __metadata("design:type", Array)
     ], MCPendingOfferList.prototype, "offers", void 0);
+    __decorate([
+        litElement.property({ type: String }),
+        __metadata("design:type", Object)
+    ], MCPendingOfferList.prototype, "lastSelectedOfferId", void 0);
 
     class MCTransactionList extends microOrchestrator.moduleConnect(litElement.LitElement) {
         static get styles() {
@@ -405,7 +426,7 @@
                 fetchPolicy: 'network-only',
             });
             this.myAgentId = result.data.me.id;
-            this.transactions = result.data.me.transactions;
+            this.transactions = result.data.me.transactions.sort((t1, t2) => t1.timestamp - t2.timestamp);
         }
         isOutgoing(transaction) {
             return transaction.debtor.id === this.myAgentId;
@@ -423,8 +444,11 @@
         renderContent() {
             if (!this.transactions)
                 return litElement.html `
-        <div class="padding center-content">
+        <div class="padding center-content column">
           <mwc-circular-progress></mwc-circular-progress>
+          <span class="placeholder" style="margin-top: 18px;"
+            >Fetching transaction history...</span
+          >
         </div>
       `;
             if (this.transactions.length === 0)
@@ -461,7 +485,8 @@
               </mwc-list-item>
 
               <span style="font-size: 20px; margin-right: 24px;">
-                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount} credits
+                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount}
+                credits
               </span>
             </div>
             ${i < this.transactions.length - 1
@@ -846,7 +871,7 @@
             if (!this.offer || this.accepting || this.canceling || this.consenting)
                 return litElement.html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 18px;">${this.placeholderMessage()}</span>
+        <span style="margin-top: 18px;" class="placeholder">${this.placeholderMessage()}</span>
       </div>`;
             return litElement.html `
       <div class="column">

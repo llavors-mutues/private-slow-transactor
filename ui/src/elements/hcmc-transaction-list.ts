@@ -35,7 +35,9 @@ export class MCTransactionList extends moduleConnect(LitElement) {
     });
 
     this.myAgentId = result.data.me.id;
-    this.transactions = result.data.me.transactions;
+    this.transactions = result.data.me.transactions.sort(
+      (t1, t2) => t1.timestamp - t2.timestamp
+    );
   }
 
   isOutgoing(transaction: Transaction) {
@@ -57,8 +59,11 @@ export class MCTransactionList extends moduleConnect(LitElement) {
   renderContent() {
     if (!this.transactions)
       return html`
-        <div class="padding center-content">
+        <div class="padding center-content column">
           <mwc-circular-progress></mwc-circular-progress>
+          <span class="placeholder" style="margin-top: 18px;"
+            >Fetching transaction history...</span
+          >
         </div>
       `;
 
@@ -98,7 +103,8 @@ export class MCTransactionList extends moduleConnect(LitElement) {
               </mwc-list-item>
 
               <span style="font-size: 20px; margin-right: 24px;">
-                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount} credits
+                ${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount}
+                credits
               </span>
             </div>
             ${i < this.transactions.length - 1

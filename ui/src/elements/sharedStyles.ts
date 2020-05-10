@@ -11,6 +11,10 @@ export const sharedStyles = css`
     flex-direction: row;
   }
 
+  .placeholder {
+    opacity: 0.7;
+  }
+
   .fill {
     flex: 1;
   }

@@ -12,6 +12,7 @@ export declare class MCPendingOfferList extends MCPendingOfferList_base {
     client: ApolloClient<any>;
     myAgentId: string;
     offers: Offer[];
+    lastSelectedOfferId: string | undefined;
     static get styles(): import("lit-element").CSSResult[];
     firstUpdated(): Promise<void>;
     renderPlaceholder(type: string): import("lit-element").TemplateResult;
