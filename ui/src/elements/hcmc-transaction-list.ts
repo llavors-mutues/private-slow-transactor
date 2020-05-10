@@ -36,7 +36,7 @@ export class MCTransactionList extends moduleConnect(LitElement) {
 
     this.myAgentId = result.data.me.id;
     this.transactions = result.data.me.transactions.sort(
-      (t1, t2) => t1.timestamp - t2.timestamp
+      (t1, t2) => t2.timestamp - t1.timestamp
     );
   }
 
