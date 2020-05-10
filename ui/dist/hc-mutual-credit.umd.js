@@ -428,7 +428,7 @@
                 fetchPolicy: 'network-only',
             });
             this.myAgentId = result.data.me.id;
-            this.transactions = result.data.me.transactions.sort((t1, t2) => t1.timestamp - t2.timestamp);
+            this.transactions = result.data.me.transactions.sort((t1, t2) => t2.timestamp - t1.timestamp);
         }
         isOutgoing(transaction) {
             return transaction.debtor.id === this.myAgentId;
