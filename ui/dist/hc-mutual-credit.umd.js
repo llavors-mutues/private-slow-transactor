@@ -285,6 +285,11 @@
         __metadata("design:type", Object)
     ], MCCreateOffer.prototype, "creditor", void 0);
 
+    function dateString(timestamp) {
+        return `${new Date(timestamp * 1000).toLocaleTimeString().substring(0, 5)}h,
+                  ${new Date(timestamp * 1000).toDateString()}`;
+    }
+
     class MCPendingOfferList extends microOrchestrator.moduleConnect(litElement.LitElement) {
         static get styles() {
             return [
@@ -318,11 +323,14 @@
                 detail: { transactionId, composed: true, bubbles: true },
             }));
         }
+        isOutgoing(offer) {
+            return offer.transaction.debtor.id === this.myAgentId;
+        }
         getOutgoing() {
-            return this.offers.filter((offer) => offer.transaction.debtor.id === this.myAgentId);
+            return this.offers.filter((offer) => this.isOutgoing(offer));
         }
         getIncoming() {
-            return this.offers.filter((offer) => offer.transaction.creditor.id === this.myAgentId);
+            return this.offers.filter((offer) => !this.isOutgoing(offer));
         }
         counterparty(offer) {
             return offer.transaction.creditor.id === this.myAgentId
@@ -340,15 +348,26 @@
               ${offers.map((offer) => litElement.html `
                   <mwc-list-item
                     @click=${() => this.offerSelected(offer.id)}
+                    graphic="avatar"
                     twoline
                   >
                     <span>
-                      @${this.counterparty(offer).username}
                       ${offer.transaction.amount} credits
+                      ${this.isOutgoing(offer) ? 'to' : 'from'}
+                      @${this.counterparty(offer).username}
                     </span>
                     <span slot="secondary">
-                      ${new Date(offer.transaction.timestamp * 1000).toLocaleDateString()}
+                      ${dateString(offer.transaction.timestamp)}
                     </span>
+                    <mwc-icon
+                      slot="graphic"
+                      .style="color: ${this.isOutgoing(offer)
+                ? 'red'
+                : 'green'}"
+                      >${this.isOutgoing(offer)
+                ? 'call_made'
+                : 'call_received'}</mwc-icon
+                    >
                   </mwc-list-item>
                 `)}
             </mwc-list>
@@ -415,18 +434,37 @@
             return litElement.html `
       <mwc-list style="width: 100%;">
         ${this.transactions.map((transaction, i) => litElement.html `
-            <mwc-list-item twoline noninteractive>
-              <span>
-                ${this.isOutgoing(transaction) ? 'To ' : 'From '}
-                @${this.getCounterparty(transaction).username}:
-                ${`${this.isOutgoing(transaction) ? '-' : '+'}${transaction.amount}`}
-                credits
-              </span>
-              <span slot="secondary"
-                >${this.getCounterparty(transaction).id}) on
-                ${new Date(transaction.timestamp * 1000).toLocaleDateString()}</span
+            <div class="row" style="align-items: center;">
+              <mwc-list-item
+                twoline
+                noninteractive
+                graphic="avatar"
+                style="flex: 1;"
               >
-            </mwc-list-item>
+                <span>
+                  ${this.isOutgoing(transaction) ? 'To ' : 'From '}
+                  @${this.getCounterparty(transaction).username} on
+                  ${dateString(transaction.timestamp)}
+                </span>
+                <span slot="secondary"
+                  >${this.getCounterparty(transaction).id}
+                </span>
+                <mwc-icon
+                  slot="graphic"
+                  .style="color: ${this.isOutgoing(transaction)
+            ? 'red'
+            : 'green'}"
+                  >${this.isOutgoing(transaction)
+            ? 'call_made'
+            : 'call_received'}</mwc-icon
+                >
+              </mwc-list-item>
+
+              <span style="font-weight: bold; margin-right: 24px;">
+                ${this.isOutgoing(transaction) ? '-' : '+'}
+                ${transaction.amount} credits
+              </span>
+            </div>
             ${i < this.transactions.length - 1
             ? litElement.html `<li divider padded role="separator"></li> `
             : litElement.html ``}
@@ -647,6 +685,17 @@
                     transactionId: this.transactionId,
                     approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
                 },
+                update: (cache, result) => {
+                    const pendingOffers = cache.readQuery({
+                        query: GET_PENDING_OFFERS,
+                    });
+                    pendingOffers.me.offers.find((o) => o.id === this.offer.id).state =
+                        'Completed';
+                    cache.writeQuery({
+                        query: GET_PENDING_OFFERS,
+                        data: pendingOffers,
+                    });
+                },
             })
                 .then(() => {
                 this.dispatchEvent(new CustomEvent('offer-accepted', {
@@ -717,15 +766,10 @@
           <span class="item">Agend ID: ${this.getCounterparty().id}</span>
 
           <span class="item">
-            Transaction amount:
-            ${this.isOutgoing() ? '-' : '+'}${this.offer.transaction.amount}
-            credits
+            Transaction amount: ${this.offer.transaction.amount} credits
           </span>
           <span class="item">
-            Date:
-            ${new Date(this.offer.transaction.timestamp * 1000).toLocaleTimeString()}
-            on
-            ${new Date(this.offer.transaction.timestamp * 1000).toLocaleDateString()}
+            Date: ${dateString(this.offer.transaction.timestamp)}
           </span>
 
           <span class="item title" style="margin-top: 16px;"
@@ -896,9 +940,10 @@
         renderAgent(agent) {
             return litElement.html `
       <div class="row" style="align-items: center;">
-        <mwc-list-item style="flex: 1;" twoline noninteractive>
-          <span>${agent.username}</span>
+        <mwc-list-item style="flex: 1;" twoline noninteractive graphic="avatar">
+          <span>@${agent.username}</span>
           <span slot="secondary">${agent.id}</span>
+          <mwc-icon slot="graphic">person</mwc-icon>
         </mwc-list-item>
 
         <mwc-button
@@ -909,7 +954,9 @@
             this.selectedCreditor = agent;
             this.createOfferDialog.open = true;
         }}
-        ></mwc-button>
+        >
+          <mwc-icon style="padding-top: 3px;" slot="trailingIcon">send</mwc-icon>
+        </mwc-button>
       </div>
     `;
         }

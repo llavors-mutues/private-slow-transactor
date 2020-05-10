@@ -16,6 +16,7 @@ export declare class MCPendingOfferList extends MCPendingOfferList_base {
     firstUpdated(): Promise<void>;
     renderPlaceholder(type: string): import("lit-element").TemplateResult;
     offerSelected(transactionId: string): void;
+    isOutgoing(offer: Offer): boolean;
     getOutgoing(): Offer[];
     getIncoming(): Offer[];
     counterparty(offer: Offer): Agent;

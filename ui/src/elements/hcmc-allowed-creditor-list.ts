@@ -63,9 +63,10 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
   renderAgent(agent: Agent) {
     return html`
       <div class="row" style="align-items: center;">
-        <mwc-list-item style="flex: 1;" twoline noninteractive>
-          <span>${agent.username}</span>
+        <mwc-list-item style="flex: 1;" twoline noninteractive graphic="avatar">
+          <span>@${agent.username}</span>
           <span slot="secondary">${agent.id}</span>
+          <mwc-icon slot="graphic">person</mwc-icon>
         </mwc-list-item>
 
         <mwc-button
@@ -76,7 +77,9 @@ export class MCAllowedCreditorList extends moduleConnect(LitElement) {
             this.selectedCreditor = agent;
             this.createOfferDialog.open = true;
           }}
-        ></mwc-button>
+        >
+          <mwc-icon style="padding-top: 3px;" slot="trailingIcon">send</mwc-icon>
+        </mwc-button>
       </div>
     `;
   }

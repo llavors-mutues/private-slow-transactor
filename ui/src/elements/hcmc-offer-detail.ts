@@ -12,6 +12,7 @@ import {
   CONSENT_FOR_OFFER,
 } from 'src/graphql/queries';
 import { Agent } from 'holochain-profiles';
+import { dateString } from 'src/utils';
 
 export class MCOfferDetail extends moduleConnect(LitElement) {
   @property({ type: String })
@@ -173,18 +174,10 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
           <span class="item">Agend ID: ${this.getCounterparty().id}</span>
 
           <span class="item">
-            Transaction amount: ${this.isOutgoing() ? '-' : '+'}
-            ${this.offer.transaction.amount} credits
+            Transaction amount: ${this.offer.transaction.amount} credits
           </span>
           <span class="item">
-            Date:
-            ${new Date(
-              this.offer.transaction.timestamp * 1000
-            ).toLocaleTimeString()}
-            on
-            ${new Date(
-              this.offer.transaction.timestamp * 1000
-            ).toLocaleDateString()}
+            Date: ${dateString(this.offer.transaction.timestamp)}
           </span>
 
           <span class="item title" style="margin-top: 16px;"

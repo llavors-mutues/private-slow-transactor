@@ -12,6 +12,7 @@ import { GET_MY_TRANSACTIONS } from '../graphql/queries';
 import { Transaction } from '../types';
 import { Agent } from 'holochain-profiles';
 import { sharedStyles } from './sharedStyles';
+import { dateString } from 'src/utils';
 
 export class MCTransactionList extends moduleConnect(LitElement) {
   @property({ type: String })
@@ -70,22 +71,37 @@ export class MCTransactionList extends moduleConnect(LitElement) {
       <mwc-list style="width: 100%;">
         ${this.transactions.map(
           (transaction, i) => html`
-            <mwc-list-item twoline noninteractive>
-              <span>
-                ${this.isOutgoing(transaction) ? 'To ' : 'From '}
-                @${this.getCounterparty(transaction).username}:
-                ${`${this.isOutgoing(transaction) ? '-' : '+'}${
-                  transaction.amount
-                }`}
-                credits
-              </span>
-              <span slot="secondary"
-                >${this.getCounterparty(transaction).id}) on
-                ${new Date(
-                  transaction.timestamp * 1000
-                ).toLocaleDateString()}</span
+            <div class="row" style="align-items: center;">
+              <mwc-list-item
+                twoline
+                noninteractive
+                graphic="avatar"
+                style="flex: 1;"
               >
-            </mwc-list-item>
+                <span>
+                  ${this.isOutgoing(transaction) ? 'To ' : 'From '}
+                  @${this.getCounterparty(transaction).username} on
+                  ${dateString(transaction.timestamp)}
+                </span>
+                <span slot="secondary"
+                  >${this.getCounterparty(transaction).id}
+                </span>
+                <mwc-icon
+                  slot="graphic"
+                  .style="color: ${this.isOutgoing(transaction)
+                    ? 'red'
+                    : 'green'}"
+                  >${this.isOutgoing(transaction)
+                    ? 'call_made'
+                    : 'call_received'}</mwc-icon
+                >
+              </mwc-list-item>
+
+              <span style="font-weight: bold; margin-right: 24px;">
+                ${this.isOutgoing(transaction) ? '-' : '+'}
+                ${transaction.amount} credits
+              </span>
+            </div>
             ${i < this.transactions.length - 1
               ? html`<li divider padded role="separator"></li> `
               : html``}

@@ -10,6 +10,7 @@ import { GET_PENDING_OFFERS } from '../graphql/queries';
 import { Offer } from 'src/types';
 import { sharedStyles } from './sharedStyles';
 import { Agent } from 'holochain-profiles';
+import { dateString } from 'src/utils';
 
 export class MCPendingOfferList extends moduleConnect(LitElement) {
   client!: ApolloClient<any>;
@@ -61,16 +62,16 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
     );
   }
 
+  isOutgoing(offer: Offer): boolean {
+    return offer.transaction.debtor.id === this.myAgentId;
+  }
+
   getOutgoing(): Offer[] {
-    return this.offers.filter(
-      (offer) => offer.transaction.debtor.id === this.myAgentId
-    );
+    return this.offers.filter((offer) => this.isOutgoing(offer));
   }
 
   getIncoming(): Offer[] {
-    return this.offers.filter(
-      (offer) => offer.transaction.creditor.id === this.myAgentId
-    );
+    return this.offers.filter((offer) => !this.isOutgoing(offer));
   }
 
   counterparty(offer: Offer): Agent {
@@ -91,17 +92,26 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
                 (offer) => html`
                   <mwc-list-item
                     @click=${() => this.offerSelected(offer.id)}
+                    graphic="avatar"
                     twoline
                   >
                     <span>
-                      @${this.counterparty(offer).username}
                       ${offer.transaction.amount} credits
+                      ${this.isOutgoing(offer) ? 'to' : 'from'}
+                      @${this.counterparty(offer).username}
                     </span>
                     <span slot="secondary">
-                      ${new Date(
-                        offer.transaction.timestamp * 1000
-                      ).toLocaleDateString()}
+                      ${dateString(offer.transaction.timestamp)}
                     </span>
+                    <mwc-icon
+                      slot="graphic"
+                      .style="color: ${this.isOutgoing(offer)
+                        ? 'red'
+                        : 'green'}"
+                      >${this.isOutgoing(offer)
+                        ? 'call_made'
+                        : 'call_received'}</mwc-icon
+                    >
                   </mwc-list-item>
                 `
               )}
