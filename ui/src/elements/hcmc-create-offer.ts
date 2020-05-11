@@ -91,6 +91,7 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
             id="creditor"
             label="Creditor"
             autoValidate
+            outlined
           ></mwc-textfield>
 
           <mwc-textfield
@@ -101,6 +102,7 @@ export class MCCreateOffer extends moduleConnect(LitElement) {
             min="0.1"
             step="0.1"
             autoValidate
+            outlined
           ></mwc-textfield>
         </div>
 

@@ -244,6 +244,7 @@
             id="creditor"
             label="Creditor"
             autoValidate
+            outlined
           ></mwc-textfield>
 
           <mwc-textfield
@@ -254,6 +255,7 @@
             min="0.1"
             step="0.1"
             autoValidate
+            outlined
           ></mwc-textfield>
         </div>
 
