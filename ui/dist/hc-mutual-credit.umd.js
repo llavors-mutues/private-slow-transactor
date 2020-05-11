@@ -382,7 +382,7 @@
                 : 'call_received'}</mwc-icon
                     >
                   </mwc-list-item>
-                  ${index < this.offers.length - 1
+                  ${index < offers.length - 1
                 ? litElement.html `<li divider padded role="separator"></li> `
                 : litElement.html ``}
                 `)}
