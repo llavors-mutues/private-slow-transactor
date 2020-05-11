@@ -119,7 +119,7 @@ export class MCPendingOfferList extends moduleConnect(LitElement) {
                         : 'call_received'}</mwc-icon
                     >
                   </mwc-list-item>
-                  ${index < this.offers.length - 1
+                  ${index < offers.length - 1
                     ? html`<li divider padded role="separator"></li> `
                     : html``}
                 `
