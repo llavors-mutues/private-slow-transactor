@@ -10,6 +10,7 @@ pub mod sender;
 pub struct CounterpartySnapshot {
     balance: f64,
     valid: bool,
+    invalid_reason: Option<String>,
     executable: bool,
     last_header_address: Address,
 }

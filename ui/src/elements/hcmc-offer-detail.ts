@@ -255,7 +255,9 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     if (!this.offer || this.accepting || this.canceling || this.consenting)
       return html`<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 18px;" class="placeholder">${this.placeholderMessage()}</span>
+        <span style="margin-top: 18px;" class="placeholder"
+          >${this.placeholderMessage()}</span
+        >
       </div>`;
 
     return html`
@@ -263,7 +265,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         ${this.renderCounterparty()}
         <div class="row center-content" style="margin-top: 24px;">
           <mwc-button
-            label="CANCEL OFFER"
+            .label=${(this.isOutgoing() ? 'CANCEL' : 'REJECT') + ' OFFER'}
             style="flex: 1; margin-right: 16px;"
             @click=${() => this.cancelOffer()}
           ></mwc-button>

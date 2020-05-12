@@ -8,7 +8,7 @@ use crate::{
     transaction::Transaction,
 };
 use hdk::holochain_core_types::chain_header::ChainHeader;
-use hdk::{prelude::*, AGENT_ADDRESS};
+use hdk::prelude::*;
 use holochain_entry_utils::HolochainEntry;
 
 /**
@@ -27,23 +27,29 @@ pub fn get_counterparty_snapshot(
         ))),
     }?;
 
-    let counterparty_address = match offer.transaction.debtor_address == AGENT_ADDRESS.clone() {
-        true => offer.transaction.creditor_address.clone(),
-        false => offer.transaction.debtor_address.clone(),
-    };
+    let counterparty_address = transaction::get_counterparty(&offer.transaction);
 
     let chain_snapshot = request_chain_snapshot(&transaction_address, &counterparty_address)?;
 
     let mut transactions =
         transaction::get_transactions_from_chain_snapshot(chain_snapshot.snapshot.clone());
 
-    let valid = match validate_snapshot_is_valid(&counterparty_address, &chain_snapshot) {
-        Ok(()) => {
-            transaction::are_transactions_valid(&offer.transaction.debtor_address, &transactions)
-                .is_ok()
-        }
-        Err(_) => false,
-    };
+    let (valid, invalid_reason) =
+        match validate_snapshot_is_valid(&counterparty_address, &chain_snapshot) {
+            Ok(()) => {
+                let result =
+                    transaction::are_transactions_valid(&counterparty_address, &transactions);
+                match result {
+                    Ok(true) => (true, None),
+                    Ok(false) => (
+                        false,
+                        Some(format!("Agent's balance is beyond the credit limit")),
+                    ),
+                    Err(err) => (false, Some(format!("{:?}", err))),
+                }
+            }
+            Err(err) => (false, Some(format!("{:?}", err))),
+        };
 
     let balance = transaction::compute_balance(&counterparty_address, &transactions);
 
@@ -57,6 +63,7 @@ pub fn get_counterparty_snapshot(
         balance,
         executable,
         valid,
+        invalid_reason,
         last_header_address: chain_snapshot.snapshot[0].0.address(),
     })
 }

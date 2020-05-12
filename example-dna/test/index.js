@@ -167,7 +167,7 @@ orchestrator.registerScenario(
     t.notOk(result.Ok);
   }
 );
-
+/* 
 orchestrator.registerScenario("cancel offer works", async (s, t) => {
   const { alice, bob } = await s.players(
     { alice: conductorConfig, bob: conductorConfig },
@@ -206,5 +206,5 @@ orchestrator.registerScenario("cancel offer works", async (s, t) => {
   result = await acceptOffer(transactionAddress, last_header_address)(bob);
   t.notOk(result.Ok);
 });
-
+ */
 orchestrator.run();
