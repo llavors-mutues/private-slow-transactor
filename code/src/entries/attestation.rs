@@ -14,6 +14,7 @@ use hdk::{
     },
     ValidationData,
 };
+use std::collections::HashMap;
 use holochain_entry_utils::HolochainEntry;
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksOptions, LinksResult, LinksStatusRequestKind,
@@ -61,7 +62,7 @@ pub fn entry_definition() -> ValidatingEntryType {
                 },
                 validation: | _validation_data: hdk::LinkValidationData | {
                     match _validation_data {
-                        hdk::LinkValidationData::LinkAdd {link, validation_data, } => {
+                        hdk::LinkValidationData::LinkAdd { link, validation_data, } => {
                             let author = validation_data.package.chain_header.provenances()[0].source();
 
                             let attestation: Attestation = hdk::utils::get_as_type(link.link.target().clone())?;
@@ -203,6 +204,24 @@ pub fn validate_transaction_headers(chain_headers: &Vec<ChainHeader>) -> ZomeApi
             chain_headers
         )));
     }
+
+    let mut agents: HashMap<Address, bool> = HashMap::new();
+
+    for header in chain_headers {
+        let author = header.provenances()[0].source().into();
+        if agents.contains_key(&author) {
+            return Err(ZomeApiError::from(String::from("There is a repeated agent in the chain headers")));
+        }
+        agents.insert(author, true);
+    }
+
+    Ok(())
+}
+
+// Validates that every party in the entry has its corresponding header in the given header list
+pub fn validate_headers_with_local_offer(chain_headers: &Vec<ChainHeader>) -> ZomeApiResult<()> {
+    let transaction_address = chain_headers[0].entry_address();
+
     let offer = offer::query_offer(&transaction_address)?;
 
     let agent_addresses: Vec<Address> = chain_headers
