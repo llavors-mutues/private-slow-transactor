@@ -76,11 +76,48 @@ function cancelOffer(transactionAddress) {
     });
 }
 
+async function createAndAcceptTransaction(t, debtor, creditor, amount) {
+  const debtorAddress = debtor.instance("transactor").agentAddress;
+  const creditorAddress = creditor.instance("transactor").agentAddress;
+
+  let result = await createOffer(creditorAddress, amount)(debtor);
+  await s.consistency();
+  t.ok(result.Ok);
+
+  let transactionAddress = result.Ok;
+
+  result = await getCounterpartyBalance(transactionAddress)(debtor);
+  t.notOk(result.Ok);
+
+  result = await consentForOffer(transactionAddress)(creditor);
+  await s.consistency();
+  t.ok(result.Ok);
+
+  result = await getCounterpartyBalance(transactionAddress)(debtor);
+  t.equal(result.Ok.executable, true);
+
+  result = await getCounterpartyBalance(transactionAddress)(creditor);
+  t.equal(result.Ok.executable, true);
+
+  result = await acceptOffer(
+    transactionAddress,
+    result.Ok.last_header_address
+  )(creditor);
+  await s.consistency();
+  t.ok(result);
+}
+
 orchestrator.registerScenario(
   "offer credits, accepting transactions and testing credit limits",
   async (s, t) => {
     const { alice, bob } = await s.players(
-      { alice: conductorConfig, bob: conductorConfig },
+      {
+        alice: conductorConfig,
+        bob: conductorConfig,
+        carol: conductorConfig,
+        dave: conductorConfig,
+        eve: conductorConfig,
+      },
       true
     );
 
@@ -90,12 +127,12 @@ orchestrator.registerScenario(
     let result = await createOffer(bobAddress, 10)(alice);
     await s.consistency();
     t.ok(result.Ok);
-    
+
     let transactionAddress = result.Ok;
-    
+
     result = await getCounterpartyBalance(transactionAddress)(alice);
     t.notOk(result.Ok);
-    
+
     result = await consentForOffer(transactionAddress)(bob);
     await s.consistency();
     t.ok(result.Ok);
@@ -167,7 +204,7 @@ orchestrator.registerScenario(
     t.notOk(result.Ok);
   }
 );
-/* 
+
 orchestrator.registerScenario("cancel offer works", async (s, t) => {
   const { alice, bob } = await s.players(
     { alice: conductorConfig, bob: conductorConfig },
@@ -206,5 +243,29 @@ orchestrator.registerScenario("cancel offer works", async (s, t) => {
   result = await acceptOffer(transactionAddress, last_header_address)(bob);
   t.notOk(result.Ok);
 });
- */
+
+orchestrator.registerScenario(
+  "lots of transactions with lots of different holders of the DHT",
+  async (s, t) => {
+    const { alice, bob, carol, dave, eve } = await s.players(
+      {
+        alice: conductorConfig,
+        bob: conductorConfig,
+        carol: conductorConfig,
+        dave: conductorConfig,
+        eve: conductorConfig,
+      },
+      true
+    );
+
+    await createAndAcceptTransaction(t, alice, bob, 10);
+    await createAndAcceptTransaction(t, bob, alice, 10);
+    await createAndAcceptTransaction(t, alice, bob, 10);
+    await createAndAcceptTransaction(t, alice, carol, 10);
+    await createAndAcceptTransaction(t, carol, bob, 10);
+    await createAndAcceptTransaction(t, alice, dave, 10);
+    await createAndAcceptTransaction(t, eve, dave, 10);
+    await createAndAcceptTransaction(t, carol, bob, 10);
+  }
+);
 orchestrator.run();
