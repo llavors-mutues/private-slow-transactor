@@ -80,7 +80,7 @@ fn request_chain_snapshot(
     let result = match send_message(counterparty_address.clone(), message) {
         Ok(r) => Ok(r),
         Err(_) => Err(ZomeApiError::from(String::from(
-            "Counterpary is offline at the moment, could not get their chain snapshot",
+            "Counterparty is offline at the moment, could not get their chain snapshot",
         ))),
     }?;
 
