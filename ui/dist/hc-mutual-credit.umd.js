@@ -775,6 +775,7 @@
                     composed: true,
                     bubbles: true,
                 }));
+                this.loadOffer();
             })
                 .finally(() => (this.accepting = false));
         }

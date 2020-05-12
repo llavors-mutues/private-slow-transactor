@@ -110,6 +110,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
             bubbles: true,
           })
         );
+        this.loadOffer();
       })
       .finally(() => (this.accepting = false));
   }
