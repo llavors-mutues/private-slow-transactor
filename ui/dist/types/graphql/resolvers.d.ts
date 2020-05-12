@@ -8,12 +8,21 @@ export declare const resolvers: {
         };
     };
     Offer: {
-        counterpartySnapshot(parent: any, _: any, { container }: {
+        counterparty(parent: any, _: any, { container }: {
             container: any;
-        }): Promise<any>;
+        }): Promise<{
+            online: boolean;
+            consented: boolean;
+            snapshot: any;
+        } | {
+            online: boolean;
+            consented: null;
+            snapshot: null;
+        } | undefined>;
     };
     CounterpartySnapshot: {
         lastHeaderId(parent: any): any;
+        invalidReason(parent: any): any;
     };
     Query: {
         offer(_: any, { transactionId }: {

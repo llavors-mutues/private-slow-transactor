@@ -112,11 +112,16 @@ const GET_OFFER_DETAIL = gql `
         timestamp
       }
 
-      counterpartySnapshot {
-        executable
-        valid
-        balance
-        lastHeaderId
+      counterparty {
+        online
+        consented
+        snapshot {
+          executable
+          valid
+          invalidReason
+          balance
+          lastHeaderId
+        }
       }
 
       state
@@ -298,7 +303,7 @@ __decorate([
 ], MCCreateOffer.prototype, "creditor", void 0);
 
 function dateString(timestamp) {
-    return `${new Date(timestamp * 1000).toLocaleTimeString().substring(0, 5)}h,
+    return `${new Date(timestamp * 1000).toLocaleTimeString()}h,
                   ${new Date(timestamp * 1000).toDateString()}`;
 }
 
@@ -543,8 +548,15 @@ const mutualCreditTypeDefs = gql `
   type CounterpartySnapshot {
     executable: Boolean!
     balance: Float!
+    invalidReason: String
     valid: Boolean!
     lastHeaderId: ID!
+  }
+
+  type Counterparty {
+    online: Boolean!
+    consented: Boolean
+    snapshot: CounterpartySnapshot
   }
 
   type Offer {
@@ -552,7 +564,7 @@ const mutualCreditTypeDefs = gql `
 
     transaction: Transaction!
 
-    counterpartySnapshot: CounterpartySnapshot
+    counterparty: Counterparty!
 
     state: OfferState!
   }
@@ -601,23 +613,42 @@ const resolvers = {
         },
     },
     Offer: {
-        async counterpartySnapshot(parent, _, { container }) {
+        async counterparty(parent, _, { container }) {
             const mutualCreditProvider = container.get(MutualCreditBindings.MutualCreditProvider);
             try {
                 const snapshot = await mutualCreditProvider.call('get_counterparty_snapshot', {
                     transaction_address: parent.id,
                 });
-                return snapshot;
+                return {
+                    online: true,
+                    consented: true,
+                    snapshot,
+                };
             }
             catch (e) {
-                if (e.message.includes('Offer is not pending'))
-                    return null;
+                if (e.message.includes('Offer is not pending')) {
+                    return {
+                        online: true,
+                        consented: false,
+                        snapshot: null,
+                    };
+                }
+                else if (e.message.includes('Counterparty is offline')) {
+                    return {
+                        online: false,
+                        consented: null,
+                        snapshot: null,
+                    };
+                }
             }
         },
     },
     CounterpartySnapshot: {
         lastHeaderId(parent) {
             return parent.last_header_address;
+        },
+        invalidReason(parent) {
+            return parent.invalid_reason;
         },
     },
     Query: {
@@ -698,6 +729,7 @@ class MCOfferDetail extends moduleConnect(LitElement) {
         }
     }
     async loadOffer() {
+        const loadingTransactionId = this.transactionId;
         this.offer = undefined;
         this.client = this.request(ApolloClientModule.bindings.Client);
         const result = await this.client.query({
@@ -707,23 +739,28 @@ class MCOfferDetail extends moduleConnect(LitElement) {
             },
             fetchPolicy: 'network-only',
         });
-        this.offer = result.data.offer;
-        this.myAgentId = result.data.me.id;
+        if (loadingTransactionId === this.transactionId) {
+            this.offer = result.data.offer;
+            this.myAgentId = result.data.me.id;
+        }
     }
     acceptOffer() {
+        if (!this.offer.counterparty.snapshot)
+            return null;
+        const transactionId = this.transactionId;
         this.accepting = true;
         this.client
             .mutate({
             mutation: ACCEPT_OFFER,
             variables: {
-                transactionId: this.transactionId,
-                approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
+                transactionId,
+                approvedHeaderId: this.offer.counterparty.snapshot.lastHeaderId,
             },
             update: (cache, result) => {
                 const pendingOffers = cache.readQuery({
                     query: GET_PENDING_OFFERS,
                 });
-                pendingOffers.me.offers.find((o) => o.id === this.offer.id).state =
+                pendingOffers.me.offers.find((o) => o.id === transactionId).state =
                     'Completed';
                 cache.writeQuery({
                     query: GET_PENDING_OFFERS,
@@ -733,7 +770,14 @@ class MCOfferDetail extends moduleConnect(LitElement) {
         })
             .then(() => {
             this.dispatchEvent(new CustomEvent('offer-accepted', {
-                detail: { transactionId: this.transactionId },
+                detail: { transactionId },
+                composed: true,
+                bubbles: true,
+            }));
+        })
+            .catch(() => {
+            this.dispatchEvent(new CustomEvent('offer-failed-to-accept', {
+                detail: { transactionId },
                 composed: true,
                 bubbles: true,
             }));
@@ -742,6 +786,7 @@ class MCOfferDetail extends moduleConnect(LitElement) {
     }
     consentOffer() {
         this.consenting = true;
+        const transactionId = this.transactionId;
         this.client
             .mutate({
             mutation: CONSENT_FOR_OFFER,
@@ -751,7 +796,7 @@ class MCOfferDetail extends moduleConnect(LitElement) {
         })
             .then(() => {
             this.dispatchEvent(new CustomEvent('offer-consented', {
-                detail: { transactionId: this.transactionId },
+                detail: { transactionId },
                 composed: true,
                 bubbles: true,
             }));
@@ -760,23 +805,24 @@ class MCOfferDetail extends moduleConnect(LitElement) {
             .finally(() => (this.consenting = false));
     }
     async cancelOffer() {
+        const transactionId = this.transactionId;
         (this.canceling = true),
             await this.client.mutate({
                 mutation: CANCEL_OFFER,
                 variables: {
-                    transactionId: this.transactionId,
+                    transactionId,
                 },
                 update: (cache, result) => {
                     const pendingOffers = cache.readQuery({
                         query: GET_PENDING_OFFERS,
                     });
-                    const offers = pendingOffers.me.offers.filter((o) => o.id !== this.transactionId);
+                    const offers = pendingOffers.me.offers.filter((o) => o.id !== transactionId);
                     pendingOffers.me.offers = offers;
                     cache.writeQuery({ query: GET_PENDING_OFFERS, data: pendingOffers });
                 },
             });
         this.dispatchEvent(new CustomEvent('offer-canceled', {
-            detail: { transactionId: this.transactionId },
+            detail: { transactionId },
             bubbles: true,
             composed: true,
         }));
@@ -789,13 +835,77 @@ class MCOfferDetail extends moduleConnect(LitElement) {
             ? this.offer.transaction.debtor
             : this.offer.transaction.creditor;
     }
+    getExecutableStatus() {
+        if (!this.offer.counterparty.snapshot)
+            return '';
+        if (this.offer.counterparty.snapshot.executable) {
+            if (this.isOutgoing())
+                return `${this.getCounterpartyUsername()} can execute this offer right now`;
+            else
+                return `You can execute this offer right now`;
+        }
+        else
+            return `Executing the offer would violate the credit limits`;
+    }
+    getCounterpartyUsername() {
+        return `@${this.getCounterparty().username}`;
+    }
+    userShouldWait() {
+        const snapshot = this.offer.counterparty.snapshot;
+        return (snapshot &&
+            !snapshot.valid &&
+            snapshot.invalidReason.includes('Number of attestations in the DHT does not match'));
+    }
+    renderCounterpartyStatus() {
+        if (!this.offer.counterparty.online)
+            return html `
+        <span class="item">
+          ${this.getCounterpartyUsername()} is not online at the moment, cannot
+          get their chain.
+        </span>
+      `;
+        else if (!this.offer.counterparty.consented) {
+            return html `
+        <span class="item">
+          ${this.offer.state !== 'Received'
+                ? `${this.getCounterpartyUsername()} has `
+                : 'You have '}
+          not consented for to share
+          ${this.offer.state !== 'Received' ? 'their' : 'your'} source chain yet
+        </span>
+      `;
+        }
+        else if (this.offer.counterparty.snapshot) {
+            const balance = this.offer.counterparty.snapshot.balance;
+            return html ` <span class="item">
+          Balance: ${balance > 0 ? '+' : ''}${balance} credits
+        </span>
+        ${this.userShouldWait()
+                ? html `<span>
+              Could not fetch last transaction of
+              ${this.getCounterpartyUsername()} from the DHT: wait for eventual
+              consistency and try again.
+            </span>`
+                : html `
+              <span class="item">
+                Transaction history is
+                ${this.offer.counterparty.snapshot.valid
+                    ? 'valid'
+                    : 'invalid! You cannot transact with an invalid agent.'}
+              </span>
+            `}
+        ${this.offer.counterparty.snapshot.valid
+                ? html ` <span class="item">${this.getExecutableStatus()} </span> `
+                : html ``}`;
+        }
+    }
     renderCounterparty() {
-        const cUsername = `@${this.getCounterparty().username}`;
         return html `
       <div class="row">
         <div class="column">
           <span class="item title">
-            Offer ${this.isOutgoing() ? ' to ' : ' from '} ${cUsername}
+            Offer ${this.isOutgoing() ? ' to ' : ' from '}
+            ${this.getCounterpartyUsername()}
           </span>
           <span class="item">Agend ID: ${this.getCounterparty().id}</span>
 
@@ -807,34 +917,9 @@ class MCOfferDetail extends moduleConnect(LitElement) {
           </span>
 
           <span class="item title" style="margin-top: 16px;"
-            >${cUsername} current status</span
+            >${this.getCounterpartyUsername()} current status</span
           >
-
-          ${this.offer.counterpartySnapshot
-            ? html `
-                <span class="item">
-                  Balance: ${this.offer.counterpartySnapshot.balance} credits
-                </span>
-                <span class="item">
-                  Transaction history is
-                  ${this.offer.counterpartySnapshot.valid ? 'valid' : 'invalid'}
-                </span>
-                <span class="item">
-                  Offer is
-                  ${this.offer.counterpartySnapshot.executable ? '' : 'not'}
-                  executable right now
-                </span>
-              `
-            : html `
-                <span class="item">
-                  ${this.offer.state !== 'Received'
-                ? `${cUsername} has `
-                : 'You have '}
-                  not consented for to share
-                  ${this.offer.state !== 'Received' ? 'their' : 'your'} source
-                  chain yet
-                </span>
-              `}
+          ${this.renderCounterpartyStatus()}
         </div>
       </div>
     `;
@@ -848,47 +933,58 @@ class MCOfferDetail extends moduleConnect(LitElement) {
             return 'Consenting for offer...';
         return 'Fetching and verifying counterparty chain...';
     }
+    getForwardActionLabel() {
+        if (!this.offer.counterparty.online)
+            return 'Awaiting for agent to be online';
+        else if (!this.offer.counterparty.consented)
+            return 'Awaiting for consent';
+        else
+            return 'Awaiting for approval';
+    }
     renderOfferForwardAction() {
-        if (this.isOutgoing())
+        if (this.isOutgoing() || !this.offer.counterparty.online)
             return html `<mwc-button
         style="flex: 1;"
-        .label="Awaiting for ${this.offer.counterpartySnapshot
-                ? 'approval'
-                : 'consent'}"
+        .label=${this.getForwardActionLabel()}
         disabled
         raised
       >
       </mwc-button>`;
-        if (this.offer.state == 'Received')
+        else if (this.offer.state == 'Received')
             return html `<mwc-button
         style="flex: 1;"
         label="CONSENT TO SHOW CHAIN"
         raised
         @click=${() => this.consentOffer()}
       ></mwc-button>`;
-        return html `
-      <mwc-button
-        style="flex: 1;"
-        .disabled=${!this.offer.counterpartySnapshot.executable ||
-            this.offer.state !== 'Pending'}
-        label="ACCEPT AND COMPLETE TRANSACTION"
-        raised
-        @click=${() => this.acceptOffer()}
-      ></mwc-button>
-    `;
+        else {
+            const snapshot = this.offer.counterparty.snapshot;
+            return html `
+        <mwc-button
+          style="flex: 1;"
+          .disabled=${!(snapshot && snapshot.executable) ||
+                this.offer.state !== 'Pending'}
+          label="ACCEPT AND COMPLETE TRANSACTION"
+          raised
+          @click=${() => this.acceptOffer()}
+        ></mwc-button>
+      `;
+        }
     }
     render() {
         if (!this.offer || this.accepting || this.canceling || this.consenting)
             return html `<div class="column fill center-content">
         <mwc-circular-progress></mwc-circular-progress>
-        <span style="margin-top: 18px;" class="placeholder">${this.placeholderMessage()}</span>
+        <span style="margin-top: 18px;" class="placeholder"
+          >${this.placeholderMessage()}</span
+        >
       </div>`;
         return html `
       <div class="column">
         ${this.renderCounterparty()}
         <div class="row center-content" style="margin-top: 24px;">
           <mwc-button
-            label="CANCEL OFFER"
+            .label=${(this.isOutgoing() ? 'CANCEL' : 'REJECT') + ' OFFER'}
             style="flex: 1; margin-right: 16px;"
             @click=${() => this.cancelOffer()}
           ></mwc-button>

@@ -23,6 +23,7 @@ export const mutualCreditTypeDefs = gql`
   type CounterpartySnapshot {
     executable: Boolean!
     balance: Float!
+    invalidReason: String
     valid: Boolean!
     lastHeaderId: ID!
   }

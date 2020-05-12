@@ -62,6 +62,9 @@ export const resolvers = {
     lastHeaderId(parent) {
       return parent.last_header_address;
     },
+    invalidReason(parent) {
+      return parent.invalid_reason;
+    },
   },
   Query: {
     async offer(_, { transactionId }, { container }) {

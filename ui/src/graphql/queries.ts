@@ -77,11 +77,16 @@ export const GET_OFFER_DETAIL = gql`
         timestamp
       }
 
-      counterpartySnapshot {
-        executable
-        valid
-        balance
-        lastHeaderId
+      counterparty {
+        online
+        consented
+        snapshot {
+          executable
+          valid
+          invalidReason
+          balance
+          lastHeaderId
+        }
       }
 
       state

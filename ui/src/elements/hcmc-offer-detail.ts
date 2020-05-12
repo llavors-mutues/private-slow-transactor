@@ -68,6 +68,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
 
   acceptOffer() {
     if (!this.offer.counterparty.snapshot) return null;
+    const transactionId = this.transactionId;
 
     this.accepting = true;
 
@@ -75,7 +76,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       .mutate({
         mutation: ACCEPT_OFFER,
         variables: {
-          transactionId: this.transactionId,
+          transactionId,
           approvedHeaderId: this.offer.counterparty.snapshot.lastHeaderId,
         },
         update: (cache, result) => {
@@ -83,7 +84,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
             query: GET_PENDING_OFFERS,
           });
 
-          pendingOffers.me.offers.find((o) => o.id === this.offer.id).state =
+          pendingOffers.me.offers.find((o) => o.id === transactionId).state =
             'Completed';
 
           cache.writeQuery({
@@ -95,7 +96,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       .then(() => {
         this.dispatchEvent(
           new CustomEvent('offer-accepted', {
-            detail: { transactionId: this.transactionId },
+            detail: { transactionId },
             composed: true,
             bubbles: true,
           })
@@ -104,7 +105,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       .catch(() => {
         this.dispatchEvent(
           new CustomEvent('offer-failed-to-accept', {
-            detail: { transactionId: this.transactionId },
+            detail: { transactionId },
             composed: true,
             bubbles: true,
           })
@@ -115,6 +116,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
 
   consentOffer() {
     this.consenting = true;
+    const transactionId = this.transactionId;
 
     this.client
       .mutate({
@@ -126,7 +128,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       .then(() => {
         this.dispatchEvent(
           new CustomEvent('offer-consented', {
-            detail: { transactionId: this.transactionId },
+            detail: { transactionId },
             composed: true,
             bubbles: true,
           })
@@ -137,11 +139,12 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
   }
 
   async cancelOffer() {
+    const transactionId = this.transactionId;
     (this.canceling = true),
       await this.client.mutate({
         mutation: CANCEL_OFFER,
         variables: {
-          transactionId: this.transactionId,
+          transactionId,
         },
         update: (cache, result) => {
           const pendingOffers: any = cache.readQuery({
@@ -149,7 +152,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
           });
 
           const offers = pendingOffers.me.offers.filter(
-            (o) => o.id !== this.transactionId
+            (o) => o.id !== transactionId
           );
 
           pendingOffers.me.offers = offers;
@@ -160,7 +163,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
 
     this.dispatchEvent(
       new CustomEvent('offer-canceled', {
-        detail: { transactionId: this.transactionId },
+        detail: { transactionId },
         bubbles: true,
         composed: true,
       })
@@ -191,6 +194,17 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     return `@${this.getCounterparty().username}`;
   }
 
+  userShouldWait() {
+    const snapshot = this.offer.counterparty.snapshot;
+    return (
+      snapshot &&
+      !snapshot.valid &&
+      snapshot.invalidReason.includes(
+        'Number of attestations in the DHT does not match'
+      )
+    );
+  }
+
   renderCounterpartyStatus() {
     if (!this.offer.counterparty.online)
       return html`
@@ -210,15 +224,24 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         </span>
       `;
     } else if (this.offer.counterparty.snapshot) {
+      const balance = this.offer.counterparty.snapshot.balance;
       return html` <span class="item">
-          Balance: ${this.offer.counterparty.snapshot.balance} credits
+          Balance: ${balance > 0 ? '+' : ''}${balance} credits
         </span>
-        <span class="item">
-          Transaction history is
-          ${this.offer.counterparty.snapshot.valid
-            ? 'valid'
-            : 'invalid! You cannot transact with an invalid agent.'}
-        </span>
+        ${this.userShouldWait()
+          ? html`<span>
+              Could not fetch last transaction of
+              ${this.getCounterpartyUsername()} from the DHT: wait for eventual
+              consistency and try again.
+            </span>`
+          : html`
+              <span class="item">
+                Transaction history is
+                ${this.offer.counterparty.snapshot.valid
+                  ? 'valid'
+                  : 'invalid! You cannot transact with an invalid agent.'}
+              </span>
+            `}
         ${this.offer.counterparty.snapshot.valid
           ? html` <span class="item">${this.getExecutableStatus()} </span> `
           : html``}`;

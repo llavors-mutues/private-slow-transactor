@@ -17,13 +17,18 @@ export declare class MCOfferDetail extends MCOfferDetail_base {
     static get styles(): import("lit-element").CSSResult;
     updated(changedValues: PropertyValues): void;
     loadOffer(): Promise<void>;
-    acceptOffer(): void;
+    acceptOffer(): null | undefined;
     consentOffer(): void;
     cancelOffer(): Promise<void>;
     isOutgoing(): boolean;
     getCounterparty(): Agent;
+    getExecutableStatus(): string;
+    getCounterpartyUsername(): string;
+    userShouldWait(): boolean | undefined;
+    renderCounterpartyStatus(): import("lit-element").TemplateResult | undefined;
     renderCounterparty(): import("lit-element").TemplateResult;
     placeholderMessage(): "Accepting offer..." | "Canceling offer..." | "Consenting for offer..." | "Fetching and verifying counterparty chain...";
+    getForwardActionLabel(): "Awaiting for agent to be online" | "Awaiting for consent" | "Awaiting for approval";
     renderOfferForwardAction(): import("lit-element").TemplateResult;
     render(): import("lit-element").TemplateResult;
 }

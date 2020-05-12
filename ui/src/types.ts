@@ -32,6 +32,7 @@ export interface Transaction {
 export interface CounterpartySnapshot {
   valid: boolean;
   executable: boolean;
+  invalidReason: string;
   balance: number;
   lastHeaderId: string;
 }

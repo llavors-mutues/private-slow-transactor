@@ -79,9 +79,17 @@ fn request_chain_snapshot(
 
     let result = match send_message(counterparty_address.clone(), message) {
         Ok(r) => Ok(r),
-        Err(_) => Err(ZomeApiError::from(String::from(
-            "Counterparty is offline at the moment, could not get their chain snapshot",
-        ))),
+        Err(err) => {
+            if JsonString::from(err.clone())
+                .to_string()
+                .contains("Offer is pending")
+            {
+                return Err(err);
+            }
+            Err(ZomeApiError::from(String::from(
+                "Counterparty is offline at the moment, could not get their chain snapshot",
+            )))
+        }
     }?;
 
     let response = match result {
@@ -124,7 +132,7 @@ fn validate_snapshot_is_valid(
 
     if transactions.len() != attestation_count {
         return Err(ZomeApiError::from(String::from(
-            "Number of attestations in the DHT does not match the recieved chain snapshot",
+            "Number of attestations in the DHT does not match the received chain snapshot",
         )));
     }
 
