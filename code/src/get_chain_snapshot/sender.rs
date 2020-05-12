@@ -77,7 +77,12 @@ fn request_chain_snapshot(
 ) -> ZomeApiResult<ChainSnapshot> {
     let message = MessageBody::GetChainSnapshot(OfferMessage::Request(transaction_address.clone()));
 
-    let result = send_message(counterparty_address.clone(), message)?;
+    let result = match send_message(counterparty_address.clone(), message) {
+        Ok(r) => Ok(r),
+        Err(_) => Err(ZomeApiError::from(String::from(
+            "Counterpary is offline at the moment, could not get their chain snapshot",
+        ))),
+    }?;
 
     let response = match result {
         MessageBody::GetChainSnapshot(OfferMessage::Response(response)) => Ok(response),
