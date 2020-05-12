@@ -27,12 +27,18 @@ export const mutualCreditTypeDefs = gql`
     lastHeaderId: ID!
   }
 
+  type Counterparty {
+    online: Boolean!
+    consented: Boolean
+    snapshot: CounterpartySnapshot
+  }
+
   type Offer {
     id: ID!
 
     transaction: Transaction!
 
-    counterpartySnapshot: CounterpartySnapshot
+    counterparty: Counterparty!
 
     state: OfferState!
   }

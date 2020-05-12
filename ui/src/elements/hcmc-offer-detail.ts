@@ -48,6 +48,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
   }
 
   async loadOffer() {
+    const loadingTransactionId = this.transactionId;
     this.offer = undefined as any;
     this.client = this.request(ApolloClientModule.bindings.Client);
 
@@ -59,11 +60,15 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       fetchPolicy: 'network-only',
     });
 
-    this.offer = result.data.offer;
-    this.myAgentId = result.data.me.id;
+    if (loadingTransactionId === this.transactionId) {
+      this.offer = result.data.offer;
+      this.myAgentId = result.data.me.id;
+    }
   }
 
   acceptOffer() {
+    if (!this.offer.counterparty.snapshot) return null;
+
     this.accepting = true;
 
     this.client
@@ -71,7 +76,7 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
         mutation: ACCEPT_OFFER,
         variables: {
           transactionId: this.transactionId,
-          approvedHeaderId: this.offer.counterpartySnapshot.lastHeaderId,
+          approvedHeaderId: this.offer.counterparty.snapshot.lastHeaderId,
         },
         update: (cache, result) => {
           const pendingOffers: any = cache.readQuery({
@@ -90,6 +95,15 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       .then(() => {
         this.dispatchEvent(
           new CustomEvent('offer-accepted', {
+            detail: { transactionId: this.transactionId },
+            composed: true,
+            bubbles: true,
+          })
+        );
+      })
+      .catch(() => {
+        this.dispatchEvent(
+          new CustomEvent('offer-failed-to-accept', {
             detail: { transactionId: this.transactionId },
             composed: true,
             bubbles: true,
@@ -163,13 +177,61 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
       : this.offer.transaction.creditor;
   }
 
+  getExecutableStatus(): string {
+    if (!this.offer.counterparty.snapshot) return '';
+
+    if (this.offer.counterparty.snapshot.executable) {
+      if (this.isOutgoing())
+        return `${this.getCounterpartyUsername()} can execute this offer right now`;
+      else return `You can execute this offer right now`;
+    } else return `Executing the offer would violate the credit limits`;
+  }
+
+  getCounterpartyUsername(): string {
+    return `@${this.getCounterparty().username}`;
+  }
+
+  renderCounterpartyStatus() {
+    if (!this.offer.counterparty.online)
+      return html`
+        <span class="item">
+          ${this.getCounterpartyUsername()} is not online at the moment, cannot
+          get their chain.
+        </span>
+      `;
+    else if (!this.offer.counterparty.consented) {
+      return html`
+        <span class="item">
+          ${this.offer.state !== 'Received'
+            ? `${this.getCounterpartyUsername()} has `
+            : 'You have '}
+          not consented for to share
+          ${this.offer.state !== 'Received' ? 'their' : 'your'} source chain yet
+        </span>
+      `;
+    } else if (this.offer.counterparty.snapshot) {
+      return html` <span class="item">
+          Balance: ${this.offer.counterparty.snapshot.balance} credits
+        </span>
+        <span class="item">
+          Transaction history is
+          ${this.offer.counterparty.snapshot.valid
+            ? 'valid'
+            : 'invalid! You cannot transact with an invalid agent.'}
+        </span>
+        ${this.offer.counterparty.snapshot.valid
+          ? html` <span class="item">${this.getExecutableStatus()} </span> `
+          : html``}`;
+    }
+  }
+
   renderCounterparty() {
-    const cUsername = `@${this.getCounterparty().username}`;
     return html`
       <div class="row">
         <div class="column">
           <span class="item title">
-            Offer ${this.isOutgoing() ? ' to ' : ' from '} ${cUsername}
+            Offer ${this.isOutgoing() ? ' to ' : ' from '}
+            ${this.getCounterpartyUsername()}
           </span>
           <span class="item">Agend ID: ${this.getCounterparty().id}</span>
 
@@ -181,34 +243,9 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
           </span>
 
           <span class="item title" style="margin-top: 16px;"
-            >${cUsername} current status</span
+            >${this.getCounterpartyUsername()} current status</span
           >
-
-          ${this.offer.counterpartySnapshot
-            ? html`
-                <span class="item">
-                  Balance: ${this.offer.counterpartySnapshot.balance} credits
-                </span>
-                <span class="item">
-                  Transaction history is
-                  ${this.offer.counterpartySnapshot.valid ? 'valid' : 'invalid'}
-                </span>
-                <span class="item">
-                  Offer is
-                  ${this.offer.counterpartySnapshot.executable ? '' : 'not'}
-                  executable right now
-                </span>
-              `
-            : html`
-                <span class="item">
-                  ${this.offer.state !== 'Received'
-                    ? `${cUsername} has `
-                    : 'You have '}
-                  not consented for to share
-                  ${this.offer.state !== 'Received' ? 'their' : 'your'} source
-                  chain yet
-                </span>
-              `}
+          ${this.renderCounterpartyStatus()}
         </div>
       </div>
     `;
@@ -221,34 +258,42 @@ export class MCOfferDetail extends moduleConnect(LitElement) {
     return 'Fetching and verifying counterparty chain...';
   }
 
+  getForwardActionLabel() {
+    if (!this.offer.counterparty.online)
+      return 'Awaiting for agent to be online';
+    else if (!this.offer.counterparty.consented) return 'Awaiting for consent';
+    else return 'Awaiting for approval';
+  }
+
   renderOfferForwardAction() {
-    if (this.isOutgoing())
+    if (this.isOutgoing() || !this.offer.counterparty.online)
       return html`<mwc-button
         style="flex: 1;"
-        .label="Awaiting for ${this.offer.counterpartySnapshot
-          ? 'approval'
-          : 'consent'}"
+        .label=${this.getForwardActionLabel()}
         disabled
         raised
       >
       </mwc-button>`;
-    if (this.offer.state == 'Received')
+    else if (this.offer.state == 'Received')
       return html`<mwc-button
         style="flex: 1;"
         label="CONSENT TO SHOW CHAIN"
         raised
         @click=${() => this.consentOffer()}
       ></mwc-button>`;
-    return html`
-      <mwc-button
-        style="flex: 1;"
-        .disabled=${!this.offer.counterpartySnapshot.executable ||
-        this.offer.state !== 'Pending'}
-        label="ACCEPT AND COMPLETE TRANSACTION"
-        raised
-        @click=${() => this.acceptOffer()}
-      ></mwc-button>
-    `;
+    else {
+      const snapshot = this.offer.counterparty.snapshot;
+      return html`
+        <mwc-button
+          style="flex: 1;"
+          .disabled=${!(snapshot && snapshot.executable) ||
+          this.offer.state !== 'Pending'}
+          label="ACCEPT AND COMPLETE TRANSACTION"
+          raised
+          @click=${() => this.acceptOffer()}
+        ></mwc-button>
+      `;
+    }
   }
 
   render() {

@@ -36,11 +36,17 @@ export interface CounterpartySnapshot {
   lastHeaderId: string;
 }
 
+export interface Counterparty {
+  online: boolean;
+  consented: boolean;
+  snapshot?: CounterpartySnapshot;
+}
+
 export interface Offer {
   id: string;
 
   transaction: Transaction;
   state: string;
 
-  counterpartySnapshot: CounterpartySnapshot;
+  counterparty: Counterparty;
 }

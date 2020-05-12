@@ -24,7 +24,7 @@ export const resolvers = {
     },
   },
   Offer: {
-    async counterpartySnapshot(parent, _, { container }) {
+    async counterparty(parent, _, { container }) {
       const mutualCreditProvider: HolochainProvider = container.get(
         MutualCreditBindings.MutualCreditProvider
       );
@@ -36,9 +36,25 @@ export const resolvers = {
             transaction_address: parent.id,
           }
         );
-        return snapshot;
+        return {
+          online: true,
+          consented: true,
+          snapshot,
+        };
       } catch (e) {
-        if (e.message.includes('Offer is not pending')) return null;
+        if (e.message.includes('Offer is not pending')) {
+          return {
+            online: true,
+            consented: false,
+            snapshot: null,
+          };
+        } else if (e.message.includes('Counterparty is offline')) {
+          return {
+            online: false,
+            consented: null,
+            snapshot: null,
+          };
+        }
       }
     },
   },
