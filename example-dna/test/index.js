@@ -76,7 +76,7 @@ function cancelOffer(transactionAddress) {
     });
 }
 
-async function createAndAcceptTransaction(t, debtor, creditor, amount) {
+async function createAndAcceptTransaction(s, t, debtor, creditor, amount) {
   const debtorAddress = debtor.instance("transactor").agentAddress;
   const creditorAddress = creditor.instance("transactor").agentAddress;
 
@@ -258,14 +258,14 @@ orchestrator.registerScenario(
       true
     );
 
-    await createAndAcceptTransaction(t, alice, bob, 10);
-    await createAndAcceptTransaction(t, bob, alice, 10);
-    await createAndAcceptTransaction(t, alice, bob, 10);
-    await createAndAcceptTransaction(t, alice, carol, 10);
-    await createAndAcceptTransaction(t, carol, bob, 10);
-    await createAndAcceptTransaction(t, alice, dave, 10);
-    await createAndAcceptTransaction(t, eve, dave, 10);
-    await createAndAcceptTransaction(t, carol, bob, 10);
+    await createAndAcceptTransaction(s, t, alice, bob, 10);
+    await createAndAcceptTransaction(s, t, bob, alice, 10);
+    await createAndAcceptTransaction(s, t, alice, bob, 10);
+    await createAndAcceptTransaction(s, t, alice, carol, 10);
+    await createAndAcceptTransaction(s, t, carol, bob, 10);
+    await createAndAcceptTransaction(s, t, alice, dave, 10);
+    await createAndAcceptTransaction(s, t, eve, dave, 10);
+    await createAndAcceptTransaction(s, t, carol, bob, 10);
   }
 );
 orchestrator.run();
