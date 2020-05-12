@@ -82,7 +82,7 @@ fn request_chain_snapshot(
         Err(err) => {
             if JsonString::from(err.clone())
                 .to_string()
-                .contains("Offer is pending")
+                .contains("Offer is not pending")
             {
                 return Err(err);
             }
